@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using PototoTrade.Models.BuyerItem;
 using PototoTrade.Models.ShoppingCart;
+using PototoTrade.Models.User;
 
 namespace PototoTrade.Models.Product;
 

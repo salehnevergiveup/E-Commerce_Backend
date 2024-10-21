@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PototoTrade.Models;
+namespace PototoTrade.Models.User;
 
 public partial class UserDetail
 {

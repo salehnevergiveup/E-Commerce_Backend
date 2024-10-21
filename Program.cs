@@ -5,7 +5,7 @@ using PototoTrade.Middleware.Filter;
 using PototoTrade.Service.User;
 using PototoTrade.Repository.User;
 using PototoTrade.Repository.Users;
-using PototoTrade.Models;
+using PototoTrade.Data;
 
 
 

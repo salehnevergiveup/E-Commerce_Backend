@@ -6,7 +6,7 @@ using PototoTrade.Models.Product;
 using PototoTrade.Models.Role;
 using PototoTrade.Models.ShoppingCart;
 
-namespace PototoTrade.Models;
+namespace PototoTrade.Models.User;
 
 public partial class UserAccount
 {

@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PototoTrade.Data;
 using PototoTrade.Models;
+using PototoTrade.Models.User;
 using PototoTrade.Repository.Users;
 
 namespace PototoTrade.Repository.User

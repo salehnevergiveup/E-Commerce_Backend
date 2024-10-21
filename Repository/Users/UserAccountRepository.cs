@@ -1,6 +1,7 @@
 ﻿
 
-using PototoTrade.Models;
+
+using PototoTrade.Models.User;
 
 namespace PototoTrade.Repository.Users;
 
