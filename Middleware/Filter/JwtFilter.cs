@@ -12,7 +12,7 @@ namespace PototoTrade.Middleware.Filter
             if (isAuthenticated)
             {
 
-                context.Items["User"] = "aaa";
+                context.Items["User"] = "aaaa";
             }
 
 
