@@ -1,0 +1,6 @@
+@PototoTrade_HostAddress = http://localhost:5277
+
+GET {{PototoTrade_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

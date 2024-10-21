@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.Design" Version="1.1.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.8" />
+    <PackageReference Include="MySqlConnector.DependencyInjection" Version="2.3.6" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\BuyerItem\" />
+    <Folder Include="Controllers\Content\" />
+    <Folder Include="Controllers\Media\" />
+    <Folder Include="Controllers\Notification\" />
+    <Folder Include="Controllers\Role\" />
+    <Folder Include="Controllers\ShoppingCart\" />
+    <Folder Include="Controllers\Product\" />
+    <Folder Include="DTO\BuyerItem\" />
+    <Folder Include="DTO\Content\" />
+    <Folder Include="DTO\Media\" />
+    <Folder Include="DTO\Notification\" />
+    <Folder Include="DTO\Product\" />
+    <Folder Include="DTO\Role\" />
+    <Folder Include="DTO\ShoppingCart\" />
+    <Folder Include="DTO\User\" />
+    <Folder Include="Repository\BuyerItem\" />
+    <Folder Include="Repository\Content\" />
+    <Folder Include="Repository\Media\" />
+    <Folder Include="Repository\Notification\" />
+    <Folder Include="Repository\Product\" />
+    <Folder Include="Repository\Role\" />
+    <Folder Include="Repository\ShoppingCart\" />
+    <Folder Include="Service\BuyerItem\" />
+    <Folder Include="Service\Content\" />
+    <Folder Include="Service\Media\" />
+    <Folder Include="Service\Notification\" />
+    <Folder Include="Service\Product\" />
+    <Folder Include="Service\Role\" />
+    <Folder Include="Service\ShoppingCart\" />
+  </ItemGroup>
+
+</Project>
