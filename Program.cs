@@ -6,6 +6,8 @@ using PototoTrade.Service.User;
 using PototoTrade.Repository.User;
 using PototoTrade.Repository.Users;
 using PototoTrade.Data;
+using PototoTrade.Service.Utilites.Hash;
+using PototoTrade.Data.Seeders;
 
 
 
@@ -34,6 +36,8 @@ builder.Services.AddSwaggerGen();
 //User
 builder.Services.AddScoped<IUserAccountService, UserAccountServiceImpl>();
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
+builder.Services.AddScoped<IHashing, Hashing>();
+builder.Services.AddTransient<SeederFacade>();
 
 //MiddleWare
 builder.Services.AddScoped<IFilter, JwtFilter>();
@@ -50,6 +54,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -57,4 +62,17 @@ if (app.Environment.IsDevelopment())
 }
 app.UseMiddleware<FilterMiddleware>();
 
+if (args.Length == 1 && args[0].ToLower() == "init")
+    SeedData(app);
+
+void SeedData(IHost app)
+{
+    var scopedFactory = app.Services.GetService<IServiceScopeFactory>();
+
+    using (var scope = scopedFactory.CreateScope())
+    {
+        var service = scope.ServiceProvider.GetService<SeederFacade>();
+        service.SeedInitialData();
+    }
+}
 app.Run();
