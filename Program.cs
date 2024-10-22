@@ -12,11 +12,11 @@ using PototoTrade.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.WebHost.ConfigureKestrel(serverOptions =>
-{
-    serverOptions.ListenAnyIP(8080); // HTTP
-    serverOptions.ListenAnyIP(8081, listenOptions => listenOptions.UseHttps()); // HTTPS
-});
+// builder.WebHost.ConfigureKestrel(serverOptions =>
+// {
+//     serverOptions.ListenAnyIP(8080); // HTTP
+//     serverOptions.ListenAnyIP(8081, listenOptions => listenOptions.UseHttps()); // HTTPS
+// });
 
 builder.Services.AddCors(options =>
 {
@@ -29,6 +29,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddSwaggerGen();
 
 //User
 builder.Services.AddScoped<IUserAccountService, UserAccountServiceImpl>();
@@ -44,9 +45,16 @@ builder.Services.AddDbContext<DBC>(options =>
 );
 var app = builder.Build();
 
+
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-app.UseMiddleware<FilterMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+app.UseMiddleware<FilterMiddleware>();
+
 app.Run();
