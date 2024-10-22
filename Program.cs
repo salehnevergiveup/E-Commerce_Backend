@@ -8,6 +8,9 @@ using PototoTrade.Repository.Users;
 using PototoTrade.Data;
 using PototoTrade.Service.Utilites.Hash;
 using PototoTrade.Data.Seeders;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 
 
@@ -47,21 +50,45 @@ builder.Services.AddDbContext<DBC>(options =>
         new MySqlServerVersion(new Version(9, 0, 1)) // Adjust based on the MySQL version you're using
     )
 );
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .Build();
+    
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = configuration["JwtSettings:Issuer"],
+            ValidAudience = configuration["JwtSettings:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"])), 
+            ClockSkew = TimeSpan.Zero // no addational default time 5min 
+        };
+    });
+
 var app = builder.Build();
 
-
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
-app.UseAuthorization();
-app.MapControllers();
-
+//swagger configruation for the dev env
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+app.UseAuthentication(); 
+app.UseAuthorization();  
+app.MapControllers();
 app.UseMiddleware<FilterMiddleware>();
 
+//seeder for init data
 if (args.Length == 1 && args[0].ToLower() == "init")
     SeedData(app);
 
