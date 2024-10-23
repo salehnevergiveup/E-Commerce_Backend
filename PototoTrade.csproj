@@ -45,7 +45,6 @@
     <Folder Include="Repository\Media\" />
     <Folder Include="Repository\Notification\" />
     <Folder Include="Repository\Product\" />
-    <Folder Include="Repository\Role\" />
     <Folder Include="Repository\ShoppingCart\" />
     <Folder Include="Service\BuyerItem\" />
     <Folder Include="Service\Content\" />

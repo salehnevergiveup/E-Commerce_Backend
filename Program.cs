@@ -11,6 +11,7 @@ using PototoTrade.Data.Seeders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using PototoTrade.ServiceBusiness.Authentication;
 
 
 
@@ -39,8 +40,13 @@ builder.Services.AddSwaggerGen();
 //User
 builder.Services.AddScoped<IUserAccountService, UserAccountServiceImpl>();
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
+builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>(); // Session repo
+
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
+
+//services  
+builder.Services.AddScoped<Authentication>();
 
 //MiddleWare
 builder.Services.AddScoped<IFilter, JwtFilter>();
@@ -53,7 +59,7 @@ builder.Services.AddDbContext<DBC>(options =>
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(builder.Environment.ContentRootPath)
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
     .Build();
     
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
