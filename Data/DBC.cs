@@ -10,9 +10,10 @@ using PototoTrade.Models.Product;
 using PototoTrade.Models.Role;
 using PototoTrade.Models.Role.Role;
 using PototoTrade.Models.ShoppingCart;
+using PototoTrade.Models.User;
 
 
-namespace PototoTrade.Models;
+namespace PototoTrade.Data;
 
 public partial class DBC : DbContext
 {

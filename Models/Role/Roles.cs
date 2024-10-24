@@ -1,4 +1,5 @@
 ﻿using PototoTrade.Models.Role.Role;
+using PototoTrade.Models.User;
 using System;
 using System.Collections.Generic;
 
