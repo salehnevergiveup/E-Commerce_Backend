@@ -17,7 +17,5 @@ public interface UserAccountRepository
     Task AddUserWithDetailsAsync(UserAccount user, UserDetail userDetails);
 
     Task UpdateUserPasswordAsync(UserAccount user);
-
-
 }
 

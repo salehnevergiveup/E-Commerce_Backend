@@ -23,7 +23,7 @@ namespace PototoTrade.Controllers.Bussiness
 
             if (accessToken == null || refreshToken == null)
             {
-                return Unauthorized(); 
+                return Unauthorized(new {message = "Invalide Username/Email or  Password" }); 
             }
 
             var cookieOptions = new CookieOptions
@@ -41,7 +41,6 @@ namespace PototoTrade.Controllers.Bussiness
         }
 
         [HttpPost("public/logout")]
-            
         public async Task<IActionResult> Logout()
         {
             string refreshToken = Request.Cookies["refreshToken"];
@@ -72,7 +71,11 @@ namespace PototoTrade.Controllers.Bussiness
 
             var result = await _authService.RefreshTokenAsync( request.AccessToken , refreshToken);
 
-            if (!result.IsSuccessful) Response.Cookies.Delete("refreshToken");
+            if (!result.IsSuccessful)
+            {
+                Response.Cookies.Delete("refreshToken");
+                return Unauthorized(new { message = "Invalid access or refresh token." });
+            }
 
             return result.IsSuccessful?  Ok(new { AccessToken = result.Message }) :  Unauthorized(new { message = result.Message});
         }
