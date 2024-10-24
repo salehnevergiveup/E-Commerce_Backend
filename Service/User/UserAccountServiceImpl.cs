@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Models;
+using PototoTrade.Models.User;
 using PototoTrade.Repository.Users;
-using PototoTrade.Service.User;
 namespace PototoTrade.Service.User
 {
     public class UserAccountServiceImpl : IUserAccountService

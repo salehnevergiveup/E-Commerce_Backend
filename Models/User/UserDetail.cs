@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PototoTrade.Models;
+namespace PototoTrade.Models.User;
 
 public partial class UserDetail
 {
@@ -19,7 +19,7 @@ public partial class UserDetail
 
     public string? Gender { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
 

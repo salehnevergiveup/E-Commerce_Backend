@@ -1,5 +1,6 @@
 ﻿using PototoTrade.Models.BuyerItem;
 using PototoTrade.Models.ShoppingCart;
+using PototoTrade.Models.User;
 using System;
 using System.Collections.Generic;
 

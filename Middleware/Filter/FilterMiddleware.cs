@@ -25,7 +25,12 @@
         public async Task Invoke(HttpContext context)
         {
             bool isAllowed = false;
-            if (context.Request.Path.StartsWithSegments("/public/"))
+        
+            var path = context.Request.Path.Value;
+          
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            if (segments[2].Equals("public", StringComparison.OrdinalIgnoreCase))
             {
                 await _next(context); // Bypass the filter chain for "/public" APIs
                 return;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using PototoTrade.Models.Product;
+using PototoTrade.Models.User;
 
 namespace PototoTrade.Models.ShoppingCart;
 
