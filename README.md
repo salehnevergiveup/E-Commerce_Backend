@@ -16,7 +16,7 @@ To connect to the database, ensure that you have updated the connection string i
 ## Running Migrations
 
 To run the migration command and update the database, make sure to install the following tool:
-Make sure to run  
+Make sure to run to populate the inital date
 ```bash
   dotnet run  init
-to populate the inital date  
+  
