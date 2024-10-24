@@ -4,7 +4,7 @@ using PototoTrade.Models;
 //using SignalR.Models;
 using System.Collections.Generic;
 
-namespace PototoTrade.Service.User
+namespace PototoTrade.ServiceBusiness.LiveChat
 {
     public class ChatHub : Hub
     {   private readonly SharedDb _shared;
