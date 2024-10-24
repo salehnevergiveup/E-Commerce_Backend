@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SignalR Test Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@7.0.2/dist/browser/signalr.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 0;
+      }
+
+      #chatbox {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 300px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+      }
+
+      .form-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 400px;
+        margin-bottom: 20px;
+      }
+
+      .form-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        flex: 1;
+        margin-left: 10px;
+      }
+
+      textarea {
+        resize: none;
+        height: 80px;
+      }
+
+      button {
+        align-self: flex-start;
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #activeConnections {
+        font-weight: bold;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SignalR Chat Test</h1>
+
+    <div id="activeConnections">Active Connections: 0</div>
+    <!-- Display active connections -->
+
+    <div id="chatbox"></div>
+
+    <div class="form-container">
+      <div class="form-group">
+        <label for="userInput">User</label>
+        <input type="text" id="userInput" placeholder="Enter your name..." />
+      </div>
+
+      <div class="form-group">
+        <label for="messageInput">Message</label>
+        <textarea
+          id="messageInput"
+          placeholder="Type your message..."
+        ></textarea>
+      </div>
+
+      <button onclick="sendMessage()">Send Message</button>
+    </div>
+
+    <div class="form-container">
+      <button onclick="joinChat('Chat1')">Join Chat 1</button>
+      <button onclick="joinChat('Chat2')">Join Chat 2</button>
+      <button onclick="joinChat('Chat3')">Join Chat 3</button>
+    </div>
+
+    <script>
+      let currentChatRoom = ""; // Track the current chat room
+
+      // Establish connection to SignalR backend
+      const connection = new signalR.HubConnectionBuilder()
+        .withUrl("http://localhost:8080/Chat")
+        .withAutomaticReconnect()
+        .build();
+
+      // Start the connection
+      connection
+        .start()
+        .then(() => {
+          console.log("Connected to SignalR hub.");
+
+          // Listen for messages from the backend
+          connection.on("ReceiveMessage", (user, message, sentAt) => {
+            const chatbox = document.getElementById("chatbox");
+            const msgDiv = document.createElement("div");
+            msgDiv.textContent = `${sentAt} ${user}: ${message}`;
+            chatbox.appendChild(msgDiv);
+            chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll
+          });
+
+          // Listen for connection count updates
+          connection.on("UpdateConnectionsCount", (count) => {
+            document.getElementById(
+              "activeConnections"
+            ).textContent = `Active Connections: ${count}`;
+          });
+        })
+        .catch((err) => console.error("Connection failed: ", err));
+
+      // Join a chatroom function
+      function joinChat(roomName) {
+        const user = document.getElementById("userInput").value;
+
+        if (user) {
+          const conn = {
+            Username: user,
+            Chatroom: roomName,
+          };
+
+          // Invoke the backend method to join the chatroom
+          connection
+            .invoke("JoinSpecificChatRoom", conn)
+            .then(() => {
+              currentChatRoom = roomName; // Update current chat room
+              console.log(`Joined ${roomName}`);
+            })
+            .catch((err) => console.error(err.toString()));
+        } else {
+          alert("Please enter your name first.");
+        }
+      }
+
+      // Send a message to the current chatroom
+      function sendMessage() {
+        const user = document.getElementById("userInput").value;
+        const message = document.getElementById("messageInput").value;
+
+        if (user && message && currentChatRoom) {
+          connection
+            .invoke("SendMessage", message)
+            .catch((err) => console.error(err.toString()));
+
+          document.getElementById("messageInput").value = ""; // Clear input
+        } else {
+          alert("Please enter your name, message, and join a chatroom first.");
+        }
+      }
+    </script>
+  </body>
+</html>

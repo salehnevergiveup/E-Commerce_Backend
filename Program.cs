@@ -22,12 +22,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.AllowAnyOrigin()  // Allow all origins (any domain can make a request)
-               .AllowAnyMethod()  // Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-               .AllowAnyHeader(); // Allow all headers
+        builder
+            .WithOrigins("http://127.0.0.1:5500") // Explicitly allow this origin
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials(); // This is required if credentials are involved
     });
 });
 
+builder.Services.AddSingleton<SharedDb>(); //connection to db
+builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 
@@ -56,5 +60,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 app.UseMiddleware<FilterMiddleware>();
+
+app.MapHub<ChatHub>("/Chat"); //connection to chat hub
 
 app.Run();
