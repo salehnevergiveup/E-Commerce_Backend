@@ -28,9 +28,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.AllowAnyOrigin()  // Allow all origins (any domain can make a request)
-               .AllowAnyMethod()  // Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-               .AllowAnyHeader(); // Allow all headers
+        builder.WithOrigins("http://localhost:3000")
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials(); // Allow cookies to be sent
     });
 });
 
@@ -93,6 +94,11 @@ app.UseAuthentication();
 app.UseAuthorization();  
 app.MapControllers();
 app.UseMiddleware<FilterMiddleware>();
+app.UseCookiePolicy(new CookiePolicyOptions
+{
+    MinimumSameSitePolicy = SameSiteMode.None,
+    Secure = CookieSecurePolicy.Always
+});
 
 //seeder for init data
 if (args.Length == 1 && args[0].ToLower() == "init")

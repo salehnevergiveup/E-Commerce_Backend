@@ -668,6 +668,10 @@ namespace PototoTrade.Migrations
                         .HasColumnType("timestamp")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(255)

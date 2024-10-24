@@ -4,7 +4,11 @@ using System.ComponentModel.DataAnnotations;
 namespace PototoTrade.DTO.Auth;
 
 public class UserRegistrationDTO
-{
+{    
+
+    [Required]
+    public string Name {get; set;}
+
     [Required]
     [MinLength(3, ErrorMessage = "Username must be at least 3 characters long")]
     public string Username { get; set; }

@@ -3,7 +3,9 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Org.BouncyCastle.Bcpg.Sig;
 using PototoTrade.DTO.Auth;
+using PototoTrade.Enums;
 using PototoTrade.Models.User;
 using PototoTrade.Repository.Users;
 using PototoTrade.Service.Utilites.Hash;
@@ -55,8 +57,17 @@ namespace PototoTrade.ServiceBusiness.Authentication
 
             var user = await _userAccountRepo.GetUserByUserNameOrEmailAsync(emailOrUsername);
 
-            if (user == null || !_hashing.Verify(user.PasswordHash, password)) return (null, null);
-  
+            var isUserValid = user != null;
+            
+            if(!isUserValid) return (null, null);
+
+            var isPasswordValid = _hashing.Verify(user.PasswordHash, password);
+
+            var isAdminOrSuperAdmin = user.Role.RoleName == UserRolesEnum.SuperAdmin.ToString() ? true :   
+                                      user.Role.RoleName == UserRolesEnum.Admin.ToString() ? true : false;  
+
+            if (!isPasswordValid || isAdminOrSuperAdmin)   return (null, null);
+              
             var accessToken = this.CreateAccessToken(user);
          
             var refreshToken = this.GenerateRefreshToken();
@@ -146,6 +157,7 @@ namespace PototoTrade.ServiceBusiness.Authentication
 
             var user = new UserAccount
             {
+                Name = userRegistrationDto.Name, 
                 Username = userRegistrationDto.Username,
                 PasswordHash = passwordHash,
                 RoleId = 3, 
