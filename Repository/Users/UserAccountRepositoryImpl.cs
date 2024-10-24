@@ -19,19 +19,6 @@ namespace PototoTrade.Repository.User
         {
             return await _context.UserAccounts.ToListAsync();
         }
-        public async Task<UserAccount?> GetUserByUserNameAsync(string Username)
-        {
-            return await _context.UserAccounts.Include(u => u.Role)
-                                        .FirstOrDefaultAsync(u => u.Username == Username);
-        }
-
-        public async Task<UserAccount?> GetUserByUserEmailAsync(string email)
-        {
-            return await _context.UserAccounts
-                .Include(u => u.Role)
-                .Include(u => u.UserDetails)
-                .FirstOrDefaultAsync(u => u.UserDetails.Any(d => d.Email == email));
-        }
 
          public async Task AddUserWithDetailsAsync(UserAccount user, UserDetail userDetails)
         {
@@ -57,5 +44,14 @@ namespace PototoTrade.Repository.User
             return await _context.UserAccounts.Include(u => u.Role)
                                         .FirstOrDefaultAsync(u => u.Id == Id);
         }
+
+        public async Task<UserAccount?> GetUserByUserNameOrEmailAsync(string input)
+        {
+            return await _context.UserAccounts
+                .Include(u => u.Role)
+                .Include(u => u.UserDetails)
+                .FirstOrDefaultAsync(u => u.Username == input || u.UserDetails.Any(d => d.Email == input));
+        }
+
     }
 }

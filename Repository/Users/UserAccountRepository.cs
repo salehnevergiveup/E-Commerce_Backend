@@ -11,9 +11,8 @@ public interface UserAccountRepository
     Task <List<UserAccount>> GetUsersList();
      
     Task<UserAccount?> GetUserByIdAsync(int Id); 
-    Task <UserAccount?> GetUserByUserNameAsync(string userName);
 
-    Task<UserAccount?>GetUserByUserEmailAsync(string email);
+    Task<UserAccount?>GetUserByUserNameOrEmailAsync(string input);
 
     Task AddUserWithDetailsAsync(UserAccount user, UserDetail userDetails);
 

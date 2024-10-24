@@ -5,11 +5,11 @@ namespace PototoTrade.DTO.Auth;
 
 public class LoginDTO
 {
-    [Required]
-    public string Username { get; set; }
-    
-    [Required]
-    public string Password { get; set; }  
+    [Required(ErrorMessage = "Insert your email or username plasee")]
+    public string EmailOrUsername { get; set; }
+
+    [Required(ErrorMessage = "Password is Requred")]
+    public string Password { get; set; }
 
     public bool RememberMe { get; set; }
 

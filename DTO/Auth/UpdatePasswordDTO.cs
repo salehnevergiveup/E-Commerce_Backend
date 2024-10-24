@@ -7,9 +7,11 @@ public class UpdatePasswordDTO
 {
 
     [Required]
-    public string CurrentPassword { get; set; } // The current password for validation
+    public string CurrentPassword { get; set; } 
 
     [Required]
-    [MinLength(8, ErrorMessage = "New password must be at least 8 characters long")]
-    public string NewPassword { get; set; } // The new password to be set
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters long.")]
+    [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", 
+        ErrorMessage = "Password must contain at least one letter and one number.")]
+    public string NewPassword { get; set; } 
 }

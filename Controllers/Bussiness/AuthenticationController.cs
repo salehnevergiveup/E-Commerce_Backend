@@ -16,12 +16,8 @@ namespace PototoTrade.Controllers.Bussiness
         }
         
         [HttpPost("public/login")]
-        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
+        public async Task<IActionResult> Login(LoginDTO loginDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
 
             var (accessToken, refreshToken) = await _authService.LoginAsync(loginDto);
 
@@ -50,12 +46,7 @@ namespace PototoTrade.Controllers.Bussiness
         {
             string refreshToken = Request.Cookies["refreshToken"];
 
-            var logoutSuccess = await _authService.LogoutAsync(refreshToken);
-
-            if (!logoutSuccess)
-            {
-                return BadRequest(new {message = "invalid request."});
-            }
+            var result  = await _authService.LogoutAsync(refreshToken);
 
             var cookieOptions = new CookieOptions
             {
@@ -68,50 +59,38 @@ namespace PototoTrade.Controllers.Bussiness
 
             Response.Cookies.Append("refreshToken", "", cookieOptions); 
 
-            return Ok("Logged out successfully.");
+
+            return result.IsSuccessful? Ok(new { message = result.Message })  :   BadRequest(new { message = result.Message });
+
         }
 
 
         [HttpPost("public/refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody]RefreshTokenDTO request)
+        public async Task<IActionResult> RefreshToken(RefreshTokenDTO request)
         {
             var refreshToken = Request.Cookies["refreshToken"];
 
-            var newAccessToken = await _authService.RefreshTokenAsync( request.AccessToken , refreshToken);
+            var result = await _authService.RefreshTokenAsync( request.AccessToken , refreshToken);
 
-            if (string.IsNullOrEmpty(newAccessToken))
-            {
-                Response.Cookies.Delete("refreshToken");
-                return Unauthorized(new { message = "Invalid access or refresh token." });
-            }
+            if (!result.IsSuccessful) Response.Cookies.Delete("refreshToken");
 
-            return Ok(new { AccessToken = newAccessToken });
+            return result.IsSuccessful?  Ok(new { AccessToken = result.Message }) :  Unauthorized(new { message = result.Message});
         }
 
         [HttpPost("public/register")]
-        public async Task<IActionResult> Register([FromBody] UserRegistrationDTO userRegistrationDto)
+        public async Task<IActionResult> Register(UserRegistrationDTO userRegistrationDto)
         {
-            if(!ModelState.IsValid)  return BadRequest(new 
-            {
-                message = "Registration failed.",
-                errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-            });
-     
             var result = await _authService.RegisterUserAsync(userRegistrationDto);
             
-            return result?  Ok(new { message = "User registered successfully." }) :  BadRequest(new { message = "Registration failed. Please check your details." });  
+            return result.IsSuccessful?  Ok(new { message = result.Message}) :  BadRequest(new { message = result.Message });  
         }
 
         [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] UpdatePasswordDTO changePasswordDto)
+        public async Task<IActionResult> ChangePassword(UpdatePasswordDTO changePasswordDto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
             var result = await _authService.ChangePasswordAsync(changePasswordDto, User);
 
-            if (!result) return BadRequest(new { message = "Password change failed. Please check your details." });
-
-            return Ok(new { message = "Password changed successfully." });
+            return result.IsSuccessful? Ok(new { message = result.Message }) :  BadRequest(new { message = result.Message});
         }
 
     }
