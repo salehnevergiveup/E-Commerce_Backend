@@ -30,9 +30,8 @@ namespace PototoTrade.Controllers.Bussiness
             {
                 HttpOnly = true,
                 Expires =  loginDto.RememberMe ? DateTime.UtcNow.AddDays(30) : DateTime.UtcNow.AddDays(7),
-                Secure = true, 
-                SameSite = SameSiteMode.Strict,
-                IsEssential = true 
+                IsEssential = true, 
+                Secure = true
             };
 
             Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
@@ -50,10 +49,10 @@ namespace PototoTrade.Controllers.Bussiness
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Expires = DateTime.UtcNow.AddDays(-1),
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                IsEssential = true
+                Expires =  DateTime.UtcNow.AddDays(-1),
+                IsEssential = true,
+                Secure = true
+ 
             };
 
             Response.Cookies.Append("refreshToken", "", cookieOptions); 

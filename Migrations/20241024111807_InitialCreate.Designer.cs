@@ -12,7 +12,7 @@ using PototoTrade.Data;
 namespace PototoTrade.Migrations
 {
     [DbContext(typeof(DBC))]
-    [Migration("20241021235601_InitialCreate")]
+    [Migration("20241024111807_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -670,6 +670,10 @@ namespace PototoTrade.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

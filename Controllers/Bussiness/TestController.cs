@@ -8,7 +8,7 @@ using PototoTrade.Data;
 
 namespace PototoTrade.Controllers.Bussiness
 {
-      [Route("api/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class TestController : ControllerBase
     {
@@ -20,8 +20,8 @@ namespace PototoTrade.Controllers.Bussiness
             _context =  context; 
 
         } 
-        // Public route  
 
+        // Public route  
         [HttpGet("something")]
         public IActionResult PublicTest() {  
             var dataChecking  =  this._context.UserAccounts.ToList();  

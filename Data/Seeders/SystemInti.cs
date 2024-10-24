@@ -56,6 +56,7 @@ public class SystemInti : Seeder
          
         UserAccount superAdmin = new UserAccount
         {
+            Name = "HuaXuen", 
             Username = "SuperAdmin",
             PasswordHash = this._hash.Hash("password"),  
             RoleId = adminRole.Id,
