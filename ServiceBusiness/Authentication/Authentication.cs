@@ -49,7 +49,7 @@ namespace PototoTrade.ServiceBusiness.Authentication
             return  Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }    
         
-        public async Task<(string? AccessToken, string? RefreshToken)> LoginAsync(LoginDTO loginDto)
+        public async Task<(string? AccessToken, string? RefreshToken)> LoginAsync(LoginDTO loginDto, string[] roles)
         {
             string emailOrUsername = loginDto.EmailOrUsername; 
             string password = loginDto.Password;
@@ -63,10 +63,9 @@ namespace PototoTrade.ServiceBusiness.Authentication
 
             var isPasswordValid = _hashing.Verify(user.PasswordHash, password);
 
-            var isAdminOrSuperAdmin = user.Role.RoleName == UserRolesEnum.SuperAdmin.ToString() ? true :   
-                                      user.Role.RoleName == UserRolesEnum.Admin.ToString() ? true : false;  
+            var isUserOrAdmin = roles.Contains(user.Role.RoleName);
 
-            if (!isPasswordValid || isAdminOrSuperAdmin)   return (null, null);
+            if (!isPasswordValid || !isUserOrAdmin)   return (null, null);
               
             var accessToken = this.CreateAccessToken(user);
          
