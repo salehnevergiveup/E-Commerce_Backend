@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PototoTrade.DTO.Auth;
+using PototoTrade.Enums;
 using PototoTrade.ServiceBusiness.Authentication;
 
 namespace PototoTrade.Controllers.Bussiness
@@ -19,7 +20,7 @@ namespace PototoTrade.Controllers.Bussiness
         public async Task<IActionResult> Login(LoginDTO loginDto)
         {
 
-            var (accessToken, refreshToken) = await _authService.LoginAsync(loginDto);
+            var (accessToken, refreshToken) = await _authService.LoginAsync(loginDto,[UserRolesEnum.User.ToString()]);
 
             if (accessToken == null || refreshToken == null)
             {
@@ -38,6 +39,32 @@ namespace PototoTrade.Controllers.Bussiness
 
             return Ok(new { AccessToken = accessToken });
         }
+
+          [HttpPost("public/admin/login")]
+         public async Task<IActionResult> LoginAdmin(LoginDTO loginDto) 
+         {  
+
+            var (accessToken, refreshToken) = await _authService.LoginAsync(loginDto ,[UserRolesEnum.SuperAdmin.ToString(), UserRolesEnum.Admin.ToString()]);
+
+            if (accessToken == null || refreshToken == null)
+            {
+                return Unauthorized(new {message = "Invalide Username/Email or  Password" }); 
+            }
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires =  loginDto.RememberMe ? DateTime.UtcNow.AddDays(30) : DateTime.UtcNow.AddDays(7),
+                IsEssential = true, 
+                Secure = true
+            };
+
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+
+            return Ok(new { AccessToken = accessToken });
+
+         }
+
 
         [HttpPost("public/logout")]
         public async Task<IActionResult> Logout()
@@ -62,6 +89,7 @@ namespace PototoTrade.Controllers.Bussiness
 
         }
 
+      
 
         [HttpPost("public/refresh-token")]
         public async Task<IActionResult> RefreshToken(RefreshTokenDTO request)
