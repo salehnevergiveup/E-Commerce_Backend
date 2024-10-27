@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PototoTrade.ServiceBusiness.Authentication;
+using PototoTrade.Repository.Role;
+using PototoTrade.Repository.MediaRepo;
 
 
 
@@ -39,18 +41,21 @@ builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 
 //User
-builder.Services.AddScoped<IUserAccountService, UserAccountServiceImpl>();
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
-builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>(); // Session repo
-
+builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>();
+builder.Services.AddScoped<RoleRepository , RoleRepositoryImp>();
+builder.Services.AddScoped<MediaRepository, MediaRepositoryImp>();
+builder.Services.AddScoped<UserDetailsRepository, UserDetailsRepositoryImp>();
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
 
-//services  
+//services & Business Service
 builder.Services.AddScoped<Authentication>();
+builder.Services.AddScoped<UserAccountService>();
 
-//MiddleWare
+//MiddleWare Filters
 builder.Services.AddScoped<IFilter, JwtFilter>();
+
 builder.Services.AddDbContext<DBC>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("Default"),

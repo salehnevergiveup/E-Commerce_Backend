@@ -1,6 +1,8 @@
 ﻿
 
 
+using PototoTrade.DTO.Auth;
+using PototoTrade.DTO.User;
 using PototoTrade.Models.Role;
 using PototoTrade.Models.User;
 
@@ -10,12 +12,18 @@ public interface UserAccountRepository
 {
     Task <List<UserAccount>> GetUsersList();
      
-    Task<UserAccount?> GetUserByIdAsync(int Id); 
+    Task<UserAccount?> GetUserByIdAsync(int id); 
+    
+    Task <bool> UpdateUserAsync(int id, UserAccount userAccount);  
+
+    Task <bool> DeleteUserAsync(int id); 
 
     Task<UserAccount?>GetUserByUserNameOrEmailAsync(string input);
 
-    Task AddUserWithDetailsAsync(UserAccount user, UserDetail userDetails);
+    Task <int>CreateNewUser(UserAccount newUserDto);
 
-    Task UpdateUserPasswordAsync(UserAccount user);
+    Task UpdateUserPasswordAsync(int id, UpdatePasswordDTO passwords);
+
+
 }
 

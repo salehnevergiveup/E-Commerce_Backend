@@ -18,11 +18,12 @@ public class SystemInti : Seeder
 {
     if (!this._dataContext.Roles.Any())
     {
+        int counter = 0;
         var roles = Enum.GetValues(typeof(UserRolesEnum))
             .Cast<UserRolesEnum>()
             .Select(role => new Roles
             {
-                RoleName = role.ToString(),
+                RoleType = role.ToString(),
                 Description = role switch
                 {
                     UserRolesEnum.SuperAdmin => "Super Admin with all access and privileges",
@@ -30,12 +31,12 @@ public class SystemInti : Seeder
                     UserRolesEnum.User => "Regular user with standard access",
                     _ => "No description available"  
                 },  
-             RoleType = "superAdmin", //temp
+             RoleName = "somethig "+role, //temp
              CreatedAt = DateTime.UtcNow
             })
             .ToList();
 
-        this._dataContext.AddRange(roles);
+        this._dataContext.Roles.AddRange(roles);
         this._dataContext.SaveChanges();
     }
 
@@ -46,7 +47,7 @@ public class SystemInti : Seeder
 {
     if (this._dataContext.UserAccounts.FirstOrDefault(u => u.Username == "SuperAdmin") == null)
     {
-        Roles adminRole = this._dataContext.Roles.FirstOrDefault(r => r.RoleName == UserRolesEnum.SuperAdmin.ToString());
+        Roles adminRole = this._dataContext.Roles.FirstOrDefault(r => r.RoleType == UserRolesEnum.SuperAdmin.ToString());
 
         if (adminRole == null)
         {
