@@ -3,7 +3,7 @@ using PototoTrade;
 using Microsoft.EntityFrameworkCore;
 using PototoTrade.Middleware.Filter;
 using PototoTrade.Service.User;
-using PototoTrade.ServiceBusiness.LiveChat;
+//using PototoTrade.ServiceBusiness.LiveChat;
 using PototoTrade.Repository.User;
 using PototoTrade.Repository.Users;
 using PototoTrade.Data;
@@ -99,9 +99,13 @@ app.UseAuthorization();
 app.MapControllers();
 app.UseMiddleware<FilterMiddleware>();
 
-app.MapHub<ChatHub>("/Chat"); //connection to chat hub
+//app.MapHub<ChatHub>("/Chat"); //connection to chat hub
 
-app.MapHub<ChatHub>("/Chat"); //connection to chat hub
+
+
+//TODO: figure out how to use chat with middleware
+//TODO: once user click on 'chat now' cehck if user is authenticated, if !authenticated throw user to regiser/login page, if authenticated, extract user info.
+
 
 //seeder for init data
 if (args.Length == 1 && args[0].ToLower() == "init")

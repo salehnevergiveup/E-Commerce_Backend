@@ -24,9 +24,15 @@
 
         public async Task Invoke(HttpContext context)
         {
+            var path = context.Request.Path.Value;
+
+            if (path.StartsWith("/chat", StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
             bool isAllowed = false;
         
-            var path = context.Request.Path.Value;
           
             var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 

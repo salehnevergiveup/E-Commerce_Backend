@@ -1,8 +1,10 @@
 using PototoTrade.Models;
+using PototoTrade.Models.User;
+
 //using SignalR.Models;
 using System.Collections.Concurrent;
 
-namespace PototoTrade.Models
+namespace PototoTrade.Data
 {
     public class SharedDb
     {

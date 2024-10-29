@@ -24,8 +24,6 @@ public partial class UserAccount
 
     public DateTime? UpdatedAt { get; set; }
 
-    public string Chatroom { get; set; }
-
     public virtual ICollection<BuyerItems> BuyerItems { get; set; } = new List<BuyerItems>();
 
     public virtual ICollection<Notifications> Notifications { get; set; } = new List<Notifications>();

@@ -1,87 +1,91 @@
-using Microsoft.AspNetCore.SignalR;
-using PototoTrade.Models;
-//using SignalR.DataService;
-//using SignalR.Models;
-using System.Collections.Generic;
+// using Microsoft.AspNetCore.SignalR;
+// using PototoTrade.Models;
+// using PototoTrade.Models.User;
+// using PototoTrade.Data;
 
-namespace PototoTrade.ServiceBusiness.LiveChat
-{
-    public class ChatHub : Hub
-    {   private readonly SharedDb _shared;
+// //using SignalR.DataService;
+// //using SignalR.Models;
+// using System.Collections.Generic;
 
-        public ChatHub(SharedDb shared) => _shared = shared;
+// namespace PototoTrade.ServiceBusiness.LiveChat
+// {
+//     public class ChatHub : Hub
+//     {   private readonly SharedDb _shared;
 
-        //public async Task GetAllConnections()
-        //{
-        //    var allConnections = _shared.connections;
-        //    foreach (var connection in allConnections)
-        //    {
-        //        Console.WriteLine($"ConnectionId: {connection.Key}, Username: {connection.Value.Username}, Chatroom: {connection.Value.Chatroom}");
+//         public ChatHub(SharedDb shared) => _shared = shared;
 
-        //    }
-        //}
-        public override async Task OnConnectedAsync()
-{
-        // Add the new connection to the dictionary
-        _shared.connections[Context.ConnectionId] = new UserAccount
-        {
-            Username = "Anonymous", // Optional: Set a placeholder until the user joins a chat
-            Chatroom = "None"
-        };
+//         //public async Task GetAllConnections()
+//         //{
+//         //    var allConnections = _shared.connections;
+//         //    foreach (var connection in allConnections)
+//         //    {
+//         //        Console.WriteLine($"ConnectionId: {connection.Key}, Username: {connection.Value.Username}, Chatroom: {connection.Value.Chatroom}");
 
-        Console.WriteLine($"Connection added: {Context.ConnectionId}");
+//         //    }
+//         //}
+//         public override async Task OnConnectedAsync()
+// {
+//         // Add the new connection to the dictionary
+//         _shared.connections[Context.ConnectionId] = new UserAccount
+//         {
+//              Username = "Anonymous", // Optional: Set a placeholder until the user joins a chat
+//              Chatroom = "None"
+//             //TODO: fetch id of the sender and receiver (buyer seller) by creating a repository file for chat. onconnected, a chat record will be created.
+//         };
 
-        await base.OnConnectedAsync();
-        await GetActiveConnectionsCount(); // Update the active connection count
-    }
+//         Console.WriteLine($"Connection added: {Context.ConnectionId}");
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
-    {
-        // Remove the disconnected connection from the dictionary
-        bool removed = _shared.connections.TryRemove(Context.ConnectionId, out var removedConnection);
+//         await base.OnConnectedAsync();
+//         await GetActiveConnectionsCount(); // Update the active connection count
+//     }
 
-        if (removed)
-        {
-            Console.WriteLine($"Connection removed: {Context.ConnectionId}");
-        }
-        else
-        {
-            Console.WriteLine($"Failed to remove connection: {Context.ConnectionId}");
-        }
+//     public override async Task OnDisconnectedAsync(Exception? exception)
+//     {
+//         // Remove the disconnected connection from the dictionary
+//         bool removed = _shared.connections.TryRemove(Context.ConnectionId, out var removedConnection);
 
-        await base.OnDisconnectedAsync(exception);
-        await GetActiveConnectionsCount(); // Update the count after disconnection
-    }
+//         if (removed)
+//         {
+//             Console.WriteLine($"Connection removed: {Context.ConnectionId}");
+//         }
+//         else
+//         {
+//             Console.WriteLine($"Failed to remove connection: {Context.ConnectionId}");
+//         }
 
-    public async Task<int> GetActiveConnectionsCount()
-    {
-        int activeConnections = _shared.connections.Count;
-        Console.WriteLine($"Active connections: {activeConnections}");
+//         await base.OnDisconnectedAsync(exception);
+//         await GetActiveConnectionsCount(); // Update the count after disconnection
+//     }
 
-        // Broadcast the active connection count to all connected clients
-        await Clients.All.SendAsync("UpdateConnectionsCount", activeConnections);
-        return activeConnections;
-    }
+//     public async Task<int> GetActiveConnectionsCount()
+//     {
+//         int activeConnections = _shared.connections.Count;
+//         Console.WriteLine($"Active connections: {activeConnections}");
 
-        public async Task JoinChat(UserAccount conn)
-        {
-            await Clients.All.SendAsync("ReceiveMessage", "admin", $"{conn.Username} has joined");
-        }
-        public async Task JoinSpecificChatRoom(UserAccount conn) //for when buyer click "chat now" with seller
-        {
-            Console.WriteLine($"User {conn.Username} is joining {conn.Chatroom}"); // Log for debugging
+//         // Broadcast the active connection count to all connected clients
+//         await Clients.All.SendAsync("UpdateConnectionsCount", activeConnections);
+//         return activeConnections;
+//     }
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, conn.Chatroom);
-            _shared.connections[Context.ConnectionId] = conn;
-            await Clients.Group(conn.Chatroom).SendAsync("ReceiveMessage", "admin", $"{conn.Username} has joined {conn.Chatroom}", DateTime.Now.ToString("h:mm tt"));
-        }
+//         public async Task JoinChat(UserAccount conn)
+//         {
+//             await Clients.All.SendAsync("ReceiveMessage", "admin", $"{conn.Username} has joined");
+//         }
+//         public async Task JoinSpecificChatRoom(UserAccount conn) //for when buyer click "chat now" with seller
+//         {
+//             Console.WriteLine($"User {conn.Username} is joining {conn.Chatroom}"); // Log for debugging
+
+//             await Groups.AddToGroupAsync(Context.ConnectionId, conn.Chatroom);
+//             _shared.connections[Context.ConnectionId] = conn;
+//             await Clients.Group(conn.Chatroom).SendAsync("ReceiveMessage", "admin", $"{conn.Username} has joined {conn.Chatroom}", DateTime.Now.ToString("h:mm tt"));
+//         }
         
-        public async Task SendMessage(string message)
-        {
-            if (_shared.connections.TryGetValue(Context.ConnectionId, out UserAccount conn))
-            {
-                await Clients.Group(conn.Chatroom).SendAsync("ReceiveMessage", conn.Username, message, DateTime.Now.ToString("h:mm tt"));
-            }
-        }
-    }
-}
+//         public async Task SendMessage(string message)
+//         {
+//             if (_shared.connections.TryGetValue(Context.ConnectionId, out UserAccount conn))
+//             {
+//                 await Clients.Group(conn.Chatroom).SendAsync("ReceiveMessage", conn.Username, message, DateTime.Now.ToString("h:mm tt"));
+//             }
+//         }
+//     }
+// }
