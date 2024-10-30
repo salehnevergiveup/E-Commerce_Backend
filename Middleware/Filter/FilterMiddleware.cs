@@ -25,9 +25,9 @@
         public async Task Invoke(HttpContext context)
         {
             bool isAllowed = false;
-        
+
             var path = context.Request.Path.Value;
-          
+
             var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             if (segments[2].Equals("public", StringComparison.OrdinalIgnoreCase))

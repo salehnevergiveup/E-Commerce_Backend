@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 using PototoTrade.Models.BuyerItem;
 using PototoTrade.Models.Content;
 using PototoTrade.Models.Media;
@@ -36,7 +34,7 @@ public partial class DBC : DbContext
 
     public virtual DbSet<ContentDetail> ContentDetails { get; set; }
 
-    public virtual DbSet<Medium> Media { get; set; }
+    public virtual DbSet<Media> Media { get; set; }
 
     public virtual DbSet<Notifications> Notifications { get; set; }
 
@@ -229,7 +227,7 @@ public partial class DBC : DbContext
                 .HasConstraintName("content_details_ibfk_1");
         });
 
-        modelBuilder.Entity<Medium>(entity =>
+        modelBuilder.Entity<Media>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 

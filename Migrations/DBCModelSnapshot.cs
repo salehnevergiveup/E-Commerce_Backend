@@ -211,7 +211,7 @@ namespace PototoTrade.Migrations
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
                 });
 
-            modelBuilder.Entity("PototoTrade.Models.Media.Medium", b =>
+            modelBuilder.Entity("PototoTrade.Models.Media.Media", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

@@ -12,7 +12,7 @@ using PototoTrade.Data;
 namespace PototoTrade.Migrations
 {
     [DbContext(typeof(DBC))]
-    [Migration("20241024111807_InitialCreate")]
+    [Migration("20241027063631_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -214,7 +214,7 @@ namespace PototoTrade.Migrations
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
                 });
 
-            modelBuilder.Entity("PototoTrade.Models.Media.Medium", b =>
+            modelBuilder.Entity("PototoTrade.Models.Media.Media", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

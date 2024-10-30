@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PototoTrade.Models.Media;
 
-public partial class Medium
+public partial class Media 
 {
     public int Id { get; set; }
 
