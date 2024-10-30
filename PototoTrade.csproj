@@ -31,20 +31,15 @@
     <Folder Include="Controllers\Content\" />
     <Folder Include="Controllers\Media\" />
     <Folder Include="Controllers\Notification\" />
-    <Folder Include="Controllers\Role\" />
     <Folder Include="Controllers\ShoppingCart\" />
     <Folder Include="Controllers\Product\" />
     <Folder Include="DTO\BuyerItem\" />
     <Folder Include="DTO\Content\" />
-    <Folder Include="DTO\Media\" />
     <Folder Include="DTO\Notification\" />
     <Folder Include="DTO\Product\" />
-    <Folder Include="DTO\Role\" />
     <Folder Include="DTO\ShoppingCart\" />
-    <Folder Include="DTO\User\" />
     <Folder Include="Repository\BuyerItem\" />
     <Folder Include="Repository\Content\" />
-    <Folder Include="Repository\Media\" />
     <Folder Include="Repository\Notification\" />
     <Folder Include="Repository\Product\" />
     <Folder Include="Repository\ShoppingCart\" />
@@ -53,7 +48,6 @@
     <Folder Include="Service\Media\" />
     <Folder Include="Service\Notification\" />
     <Folder Include="Service\Product\" />
-    <Folder Include="Service\Role\" />
     <Folder Include="Service\ShoppingCart\" />
   </ItemGroup>
 
