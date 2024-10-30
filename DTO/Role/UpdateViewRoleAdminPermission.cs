@@ -6,6 +6,5 @@ namespace PototoTrade.DTO.Role;
 public class UpdateViewRoleAdminPermission
 {
     public UpdateViewRoleDTO Role { get; set; } = new UpdateViewRoleDTO();
-    public UpdateViewAdminPermission Permission { get; set; } = null;
-
+    public UpdateViewAdminPermissionDTO Permission { get; set; } = null;
 }

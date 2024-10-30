@@ -24,7 +24,7 @@ namespace PototoTrade.Controllers.Bussiness
 
             if (response.Data.AccessToken == null || response.Data.RefreshToken == null)
             {
-                return Unauthorized(new { message = "Invalide Username/Email or  Password" });
+                return Unauthorized(response);
             }
 
             var cookieOptions = new CookieOptions
@@ -37,7 +37,7 @@ namespace PototoTrade.Controllers.Bussiness
 
             Response.Cookies.Append("refreshToken", response.Data.RefreshToken, cookieOptions);
 
-            return Ok(new { AccessToken = response.Data.AccessToken });
+            return Ok(new { Success = response.Success, Message = response.Message, Data = new { AccessToken = response.Data.AccessToken } });
 
         }
 
@@ -49,7 +49,7 @@ namespace PototoTrade.Controllers.Bussiness
 
             if (response.Data.AccessToken == null || response.Data.RefreshToken == null)
             {
-                return Unauthorized(new { message = "Invalide Username/Email or  Password" });
+                return Unauthorized(response);
             }
 
             var cookieOptions = new CookieOptions
@@ -62,7 +62,7 @@ namespace PototoTrade.Controllers.Bussiness
 
             Response.Cookies.Append("refreshToken", response.Data.RefreshToken, cookieOptions);
 
-            return Ok(new { AccessToken = response.Data.AccessToken });
+            return Ok(new { Success = response.Success, Message = response.Message, Data = new { AccessToken = response.Data.AccessToken } });
         }
 
         [HttpPost("public/logout")]
@@ -100,7 +100,7 @@ namespace PototoTrade.Controllers.Bussiness
                 Response.Cookies.Delete("refreshToken");
             }
 
-            return response.Success ? Ok(new { AccessToken = response.Data }) : Unauthorized(response);
+            return response.Success ? Ok(new { Success = response.Success, Message = response.Message, Data = new { AccessToken = response.Data } }) : Unauthorized(response);
         }
 
         [HttpPost("public/register")]

@@ -29,7 +29,6 @@
     <Folder Include="Controllers\Content\" />
     <Folder Include="Controllers\Media\" />
     <Folder Include="Controllers\Notification\" />
-    <Folder Include="Controllers\Role\" />
     <Folder Include="Controllers\ShoppingCart\" />
     <Folder Include="Controllers\Product\" />
     <Folder Include="DTO\BuyerItem\" />
@@ -47,7 +46,6 @@
     <Folder Include="Service\Media\" />
     <Folder Include="Service\Notification\" />
     <Folder Include="Service\Product\" />
-    <Folder Include="Service\Role\" />
     <Folder Include="Service\ShoppingCart\" />
   </ItemGroup>
 

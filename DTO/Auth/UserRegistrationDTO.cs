@@ -6,8 +6,8 @@ namespace PototoTrade.DTO.Auth;
 
 public class UserRegistrationDTO
 {    
-    public UpdateViewUserAccountDTO UserAccount { get; set; } = new UpdateViewUserAccountDTO(); 
+    public CreateUserAccountDTO UserAccount { get; set; } = new CreateUserAccountDTO(); 
 
-    public UpdateViewUserDetailDTO? UserDetails { get; set; } = new UpdateViewUserDetailDTO(); 
+    public CreateUserDetailDTO? UserDetails { get; set; } = new CreateUserDetailDTO(); 
     
 }

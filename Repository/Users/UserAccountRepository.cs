@@ -10,20 +10,23 @@ namespace PototoTrade.Repository.Users;
 
 public interface UserAccountRepository
 {
-    Task <List<UserAccount>> GetUsersList();
-     
-    Task<UserAccount?> GetUserByIdAsync(int id); 
-    
-    Task <bool> UpdateUserAsync(int id, UserAccount userAccount);  
+    Task<List<UserAccount>> GetUsersList();
 
-    Task <bool> DeleteUserAsync(int id); 
+    Task<UserAccount?> GetUserByIdAsync(int id);
 
-    Task<UserAccount?>GetUserByUserNameOrEmailAsync(string input);
+    Task<bool> UpdateUserAsync(int id, UserAccount userAccount);
 
-    Task <int>CreateNewUser(UserAccount newUserDto);
+    Task<bool> DeleteUserAsync(int id);
+
+    Task<UserAccount?> GetUserByUserNameOrEmailAsync(string input);
+
+    Task<int> CreateNewUser(UserAccount newUserDto);
 
     Task UpdateUserPasswordAsync(int id, UpdatePasswordDTO passwords);
 
+    Task<List<UserAccount>> GetAdminsByRoleIdAsync(int roleId);
+
+    Task <bool> UpdateUserAccountsAsync(List<UserAccount> userAccounts);
 
 }
 

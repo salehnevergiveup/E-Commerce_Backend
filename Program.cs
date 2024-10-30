@@ -14,6 +14,7 @@ using System.Text;
 using PototoTrade.ServiceBusiness.Authentication;
 using PototoTrade.Repository.Role;
 using PototoTrade.Repository.MediaRepo;
+using PototoTrade.Service.Role;
 
 
 
@@ -52,6 +53,7 @@ builder.Services.AddTransient<SeederFacade>();
 //services & Business Service
 builder.Services.AddScoped<Authentication>();
 builder.Services.AddScoped<UserAccountService>();
+builder.Services.AddScoped<RoleService>();
 
 //MiddleWare Filters
 builder.Services.AddScoped<IFilter, JwtFilter>();

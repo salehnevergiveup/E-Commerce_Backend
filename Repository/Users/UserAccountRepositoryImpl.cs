@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PototoTrade.Data;
 using PototoTrade.DTO.Auth;
+using PototoTrade.Enums;
 using PototoTrade.Models.User;
 using PototoTrade.Repository.Users;
 
@@ -17,24 +18,24 @@ namespace PototoTrade.Repository.User
 
         public async Task<List<UserAccount>> GetUsersList()
         {
-            return await _context.UserAccounts.ToListAsync();  
+            return await _context.UserAccounts.ToListAsync();
         }
 
         public async Task<int> CreateNewUser(UserAccount newUser)
         {
-   
+
             await _context.UserAccounts.AddAsync(newUser);
 
             await _context.SaveChangesAsync();
 
-            return newUser.Id; 
+            return newUser.Id;
         }
 
         public async Task UpdateUserPasswordAsync(int id, UpdatePasswordDTO updatePasswordDto)
         {
             var user = await this.GetUserByIdAsync(id);
 
-          //  _context.UserAccounts.Update(user);
+            //  _context.UserAccounts.Update(user);
 
             await _context.SaveChangesAsync();
         }
@@ -53,8 +54,8 @@ namespace PototoTrade.Repository.User
         }
 
         public async Task<bool> UpdateUserAsync(int id, UserAccount userAccount)
-        {            
-           _context.UserAccounts.Update(userAccount);
+        {
+            _context.UserAccounts.Update(userAccount);
             await _context.SaveChangesAsync();
 
             return true;
@@ -62,13 +63,41 @@ namespace PototoTrade.Repository.User
 
         public async Task<bool> DeleteUserAsync(int id)
         {
-            var user =  _context.UserAccounts.FirstOrDefault( u => u.Id  == id);
+            var user = _context.UserAccounts.FirstOrDefault(u => u.Id == id);
 
-           _context.UserAccounts.Remove(user);
+            _context.UserAccounts.Remove(user);
 
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<List<UserAccount>> GetAdminsByRoleIdAsync(int roleId)
+        {
+            try
+            {
+                return await _context.UserAccounts.Where(u => u.RoleId == roleId && u.Role.RoleName == UserRolesEnum.Admin.ToString()).ToListAsync();
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+
+        }
+
+        public async Task<bool> UpdateUserAccountsAsync(List<UserAccount> userAccounts)
+        {
+            try
+            {
+                _context.UpdateRange(userAccounts);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+
         }
 
     }
