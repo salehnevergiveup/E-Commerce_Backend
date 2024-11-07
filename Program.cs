@@ -16,6 +16,10 @@ using PototoTrade.ServiceBusiness.Authentication;
 using PototoTrade.Repository.Role;
 using PototoTrade.Repository.MediaRepo;
 using PototoTrade.Service.Role;
+using PototoTrade.Models;
+using Stripe;
+using PototoTrade.Repository.Wallet;
+using PototoTrade.Service.Wallet;
 
 
 
@@ -43,6 +47,8 @@ builder.Services.AddSingleton<SharedDb>(); //connection to db
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+
 
 //User
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
@@ -50,6 +56,7 @@ builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>();
 builder.Services.AddScoped<RoleRepository , RoleRepositoryImp>();
 builder.Services.AddScoped<MediaRepository, MediaRepositoryImp>();
 builder.Services.AddScoped<UserDetailsRepository, UserDetailsRepositoryImp>();
+builder.Services.AddScoped<WalletRepository,WalletRepositoryImp>();
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
 
@@ -57,6 +64,7 @@ builder.Services.AddTransient<SeederFacade>();
 builder.Services.AddScoped<Authentication>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<UserWalletService>();
 
 //MiddleWare Filters
 builder.Services.AddScoped<IFilter, JwtFilter>();
@@ -88,6 +96,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero // no addational default time 5min 
         };
     });
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 var app = builder.Build();
 

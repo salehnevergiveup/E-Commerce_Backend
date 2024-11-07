@@ -12,7 +12,7 @@ using PototoTrade.Data;
 namespace PototoTrade.Migrations
 {
     [DbContext(typeof(DBC))]
-    [Migration("20241027063631_InitialCreate")]
+    [Migration("20241031114305_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

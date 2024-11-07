@@ -10,6 +10,7 @@ using PototoTrade.DTO.Auth;
 using PototoTrade.Models.User;
 using PototoTrade.Repository.Role;
 using PototoTrade.Repository.Users;
+using PototoTrade.Repository.Wallet;
 using PototoTrade.Service.Utilites.Hash;
 using PototoTrade.Service.Utilities.Response;
 
@@ -24,11 +25,13 @@ namespace PototoTrade.ServiceBusiness.Authentication
         private readonly SessionRepository _SessionRepo;
         private readonly IHashing _hashing;
 
+        private readonly WalletRepository _walletRepo;
+
         private readonly DBC _context;
 
         private readonly IConfiguration _configuration;
 
-        public Authentication(IConfiguration configuration, UserAccountRepository userAccountRepo, IHashing hashing, SessionRepository sessionRepo, UserDetailsRepository userDetails, DBC bC, RoleRepository roleRepository)
+        public Authentication(IConfiguration configuration, UserAccountRepository userAccountRepo, IHashing hashing, SessionRepository sessionRepo, UserDetailsRepository userDetails, DBC bC, RoleRepository roleRepository, WalletRepository walleRepo)
         {
             _userAccountRepo = userAccountRepo;
             _hashing = hashing;
@@ -37,6 +40,7 @@ namespace PototoTrade.ServiceBusiness.Authentication
             _userDetails = userDetails;
             _context = bC;
             _roleRepository = roleRepository;
+            _walletRepo = walleRepo;
         }
 
         private async Task<JwtSecurityToken> CreateAccessToken(UserAccount user)
@@ -305,6 +309,34 @@ namespace PototoTrade.ServiceBusiness.Authentication
                 };
 
                 await _userDetails.CreateUserDetails(userId, newUserDetails);
+                
+                try{ 
+                    if (_walletRepo == null)
+                    {
+                        Console.WriteLine("Wallet repository is null.");
+                        response.Message = "Wallet repository not configured.";
+                        return response;
+                    }
+
+                    var newWallet = new UserWallet{
+                    UserId = userId,
+                    AvailableBalance = 0,
+                    OnHoldBalance = 0,
+                    Currency = "MYR",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,};
+
+
+                    await  _walletRepo.CreateWallet(newWallet);
+
+               
+                }catch (Exception e){
+                    Console.WriteLine("auth class wallet error" + e);
+                    response.Message = "Wallet not created";
+                    return response;
+                };
+
+                
 
                 response.Success = true;
                 response.Data = null; // You can also return userId or other info if needed
