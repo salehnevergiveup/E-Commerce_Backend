@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PototoTrade.Models.Role.Role;
+﻿namespace PototoTrade.Models.Role;
 
 public partial class AdminPermission
 {

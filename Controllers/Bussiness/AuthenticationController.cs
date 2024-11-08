@@ -1,4 +1,5 @@
 using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PototoTrade.DTO.Auth;
 using PototoTrade.Enums;
@@ -6,7 +7,7 @@ using PototoTrade.ServiceBusiness.Authentication;
 
 namespace PototoTrade.Controllers.Bussiness
 {
-    [Route("api/[controller]")]
+    [Route("api/authentication/public")]
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
@@ -17,7 +18,7 @@ namespace PototoTrade.Controllers.Bussiness
             _authService = authService;
         }
 
-        [HttpPost("public/login")]
+        [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDTO loginDto)
         {
             var response = await _authService.LoginAsync(loginDto, [UserRolesEnum.User.ToString()]);
@@ -41,7 +42,7 @@ namespace PototoTrade.Controllers.Bussiness
 
         }
 
-        [HttpPost("public/admin/login")]
+        [HttpPost("admin/login")]
         public async Task<IActionResult> LoginAdmin(LoginDTO loginDto)
         {
 
@@ -65,12 +66,14 @@ namespace PototoTrade.Controllers.Bussiness
             return Ok(new { Success = response.Success, Message = response.Message, Data = new { AccessToken = response.Data.AccessToken } });
         }
 
-        [HttpPost("public/logout")]
+        [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             string refreshToken = Request.Cookies["refreshToken"];
 
             var response = await _authService.LogoutAsync(refreshToken);
+
+
 
             var cookieOptions = new CookieOptions
             {
@@ -88,7 +91,7 @@ namespace PototoTrade.Controllers.Bussiness
 
         }
 
-        [HttpPost("public/refresh-token")]
+        [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken(RefreshTokenDTO request)
         {
             var refreshToken = Request.Cookies["refreshToken"];
@@ -103,7 +106,7 @@ namespace PototoTrade.Controllers.Bussiness
             return response.Success ? Ok(new { Success = response.Success, Message = response.Message, Data = new { AccessToken = response.Data } }) : Unauthorized(response);
         }
 
-        [HttpPost("public/register")]
+        [HttpPost("register")]
         public async Task<IActionResult> Register(UserRegistrationDTO userRegistrationDto)
         {
             var response = await _authService.RegisterUserAsync(userRegistrationDto);
@@ -111,7 +114,8 @@ namespace PototoTrade.Controllers.Bussiness
             return response.Success ? Ok(response) : BadRequest(response);
         }
 
-        [HttpPost("change-password")]
+        [HttpPost("/api/authentication/change-password")]
+        [Authorize]
         public async Task<IActionResult> ChangePassword(UpdatePasswordDTO changePasswordDto)
         {
             var response = await _authService.ChangePasswordAsync(changePasswordDto, User);

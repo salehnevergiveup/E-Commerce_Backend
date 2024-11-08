@@ -1,14 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PototoTrade.Controllers.CustomerController;
 using PototoTrade.DTO.Role;
 using PototoTrade.Service.Role;
 
 //only for the super admin 
 namespace PototoTrade.Controllers.Role
 {
-    [Route("api/[controller]/public")]
+    [Route("api/roles")]
     [ApiController]
-    // [Authorize(Roles = "SuperAdmin" )]
-    public class RoleController : ControllerBase
+    [Authorize(Roles = "SuperAdmin" )]
+    public class RoleController : CustomerBaseController
     {
         RoleService _roleService;
 
@@ -18,42 +20,34 @@ namespace PototoTrade.Controllers.Role
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetRolesList()
+        public async Task<IActionResult> GetRolesList([FromQuery] bool includeUsers = true)
         {
-            var response = await _roleService.GetRolesList(User);
-            return response.Success ? Ok(response) : BadRequest(response);
+            return MakeResponse(await _roleService.GetRolesList(User,includeUsers));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRole(int id)
         {
-            var response = await _roleService.GetRole(id, User);
-            return response.Success ? Ok(response) : BadRequest(response);
+            return MakeResponse(await _roleService.GetRole(id, User));
         }
 
 
         [HttpPost]
-        public async Task<IActionResult> CreateRole(RoleAdminPermissionCreate rolePer)
+        public async Task<IActionResult> CreateRole(CreateRoleDTO rolePer)
         {
-            var response = await _roleService.CreateRole(rolePer, User);
-
-            return response.Success ? Ok(response) : BadRequest(response);
+            return MakeResponse(await _roleService.CreateRole(rolePer, User));
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRole(int id)
         {
-            var response = await _roleService.DeleteRole(id, User);
-            return response.Success ? Ok(response) : BadRequest(response);
+            return  MakeResponse(await _roleService.DeleteRole(id, User));
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateRole(int id, UpdateViewRoleAdminPermission rolePer)
+        public async Task<IActionResult> UpdateRole(int id, UpdateRoleDTO rolePer)
         {
-            var response = await _roleService.UpdateRole(id, rolePer, User);
-
-            return response.Success ? Ok(response) : BadRequest(response);
-
+            return MakeResponse(await _roleService.UpdateRole(id, rolePer, User)); 
         }
     }
 }

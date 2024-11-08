@@ -1,5 +1,3 @@
-using MySqlConnector;
-using PototoTrade;
 using Microsoft.EntityFrameworkCore;
 using PototoTrade.Middleware.Filter;
 using PototoTrade.Service.User;
@@ -15,6 +13,16 @@ using PototoTrade.ServiceBusiness.Authentication;
 using PototoTrade.Repository.Role;
 using PototoTrade.Repository.MediaRepo;
 using PototoTrade.Service.Role;
+using PototoTrade.Repository.CartItems;
+using PototoTrade.Repository.Cart;
+using PototoTrade.Repository.Product;
+using PototoTrade.Service.CartItem;
+using PototoTrade.Service.ShoppingCart;
+using PototoTrade.Integrations;
+using PototoTrade.ServiceBusiness.LLM;
+using PototoTrade.Repositories;
+using PototoTrade.Repository.Report;
+using PototoTrade.Service.Report;
 
 
 
@@ -41,12 +49,16 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 
-//User
+//Repos 
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
 builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>();
-builder.Services.AddScoped<RoleRepository , RoleRepositoryImp>();
+builder.Services.AddScoped<RoleRepository, RoleRepositoryImp>();
 builder.Services.AddScoped<MediaRepository, MediaRepositoryImp>();
 builder.Services.AddScoped<UserDetailsRepository, UserDetailsRepositoryImp>();
+builder.Services.AddScoped<ShoppingCartItemRepository, ShoppingCartItemRepositoryImp>();
+builder.Services.AddScoped<ShoppingCartRepository, ShoppingCartRrepositoryImp>();
+builder.Services.AddScoped<ProductRepository, ProductRepositoryImp>();
+builder.Services.AddScoped<ReportRepository,ReportRepositoryImp>(); 
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
 
@@ -54,6 +66,14 @@ builder.Services.AddTransient<SeederFacade>();
 builder.Services.AddScoped<Authentication>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<ShoppingCartItemsService>();
+builder.Services.AddScoped<ShoppingCartService>();
+builder.Services.AddScoped<LlamaIntegration>();
+builder.Services.AddScoped<LLMService>();  
+builder.Services.AddScoped<ReportsService>(); 
+builder.Services.AddSignalR();
+builder.Services.AddHttpContextAccessor(); // for the websocket
+
 
 //MiddleWare Filters
 builder.Services.AddScoped<IFilter, JwtFilter>();
@@ -69,7 +89,7 @@ var configuration = new ConfigurationBuilder()
     .SetBasePath(builder.Environment.ContentRootPath)
     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
     .Build();
-    
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -81,10 +101,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = configuration["JwtSettings:Issuer"],
             ValidAudience = configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"])), 
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"])),
             ClockSkew = TimeSpan.Zero // no addational default time 5min 
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                // If the request is for one of the hubs
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (path.StartsWithSegments("/cartHub")  /*used for the shoppig cart realtime update */ 
+                    || path.StartsWithSegments("/chatHub") /*for the chathub used for the live chatting feature*/
+                    || path.StartsWithSegments("/notificationHub")) /*for the notification feature */
+                    )
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
+
+
 
 var app = builder.Build();
 
@@ -97,8 +139,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-app.UseAuthentication(); 
-app.UseAuthorization();  
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.UseMiddleware<FilterMiddleware>();
 app.UseCookiePolicy(new CookiePolicyOptions
@@ -106,6 +148,10 @@ app.UseCookiePolicy(new CookiePolicyOptions
     MinimumSameSitePolicy = SameSiteMode.None,
     Secure = CookieSecurePolicy.Always
 });
+// Map SignalR hubs
+app.MapHub<CartHub>("/cartHub");
+app.MapHub<ChatHub>("/chatHub");// this  will be add when you create the live chathub 
+app.MapHub<NotificationHub>("/notificationHub"); //this is will be added when you create the notification  hub 
 
 //seeder for init data
 if (args.Length == 1 && args[0].ToLower() == "init")

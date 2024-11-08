@@ -3,7 +3,6 @@ using System.Data;
 using PototoTrade.Enums;
 using PototoTrade.Models;
 using PototoTrade.Models.Role;
-using PototoTrade.Models.Role.Role;
 using PototoTrade.Models.User;
 using PototoTrade.Service.Utilites.Hash;
 

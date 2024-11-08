@@ -2,7 +2,6 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using PototoTrade.Data;
 using PototoTrade.Models.Role;
-using PototoTrade.Models.Role.Role;
 
 namespace PototoTrade.Repository.Role;
 
@@ -20,6 +19,7 @@ public class RoleRepositoryImp : RoleRepository
         {
             return await _context.Roles
                 .Include(r => r.AdminPermissions)
+                .Include(r => r.UserAccounts)
                 .ToListAsync();
         }
         catch (Exception e)
@@ -29,12 +29,14 @@ public class RoleRepositoryImp : RoleRepository
 
     }
 
-    public async Task<Roles?> GetRoleAsync(int Id)
+    public async Task<Roles?> GetRoleAsync(int id)
     {
         try
         {
-
-            return await _context.Roles.Include(r => r.AdminPermissions).FirstOrDefaultAsync(r => r.Id == Id);
+            return await _context.Roles
+                        .Include(r => r.AdminPermissions)
+                        .Include(r => r.UserAccounts)
+                        .FirstOrDefaultAsync(r => r.Id == id);
 
         }
         catch (Exception e)
@@ -43,16 +45,27 @@ public class RoleRepositoryImp : RoleRepository
         }
     }
 
-    public async Task<int?> CreateRole(Roles role, AdminPermission adminPermission)
+    public async Task<Roles> GetRoleByName(string roleName)
+    {
+        try
+        {
+            return await _context.Roles
+                        .FirstOrDefaultAsync(r => r.RoleName == roleName);
+
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+
+    public async Task<int> CreateRole(Roles role)
     {
         try
         {
             await _context.Roles.AddAsync(role);
             await _context.SaveChangesAsync();
-            adminPermission.RoleId = role.Id;
-            await _context.AdminPermissions.AddAsync(adminPermission);
-            await _context.SaveChangesAsync();
-
             return role.Id;
         }
         catch (Exception e)
@@ -62,12 +75,11 @@ public class RoleRepositoryImp : RoleRepository
     }
 
 
-    public async Task<bool> UpdateRole(Roles role, AdminPermission adminPermission)
+    public async Task<bool> UpdateRole(Roles role)
     {
         try
         {
             _context.Roles.Update(role);
-            _context.AdminPermissions.Update(adminPermission);
             await _context.SaveChangesAsync();
             return true;
         }
