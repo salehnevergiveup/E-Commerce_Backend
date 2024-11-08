@@ -6,7 +6,6 @@ using PototoTrade.Models.Media;
 using PototoTrade.Models.Notification;
 using PototoTrade.Models.Product;
 using PototoTrade.Models.Role;
-using PototoTrade.Models.Role.Role;
 using PototoTrade.Models.ShoppingCart;
 using PototoTrade.Models.User;
 

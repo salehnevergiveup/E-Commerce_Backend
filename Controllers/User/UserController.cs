@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PototoTrade.Controllers.CustomerController;
 using PototoTrade.DTO.User;
 using PototoTrade.Service.User;
 
 namespace PototoTrade.Controllers.User
 {
     [ApiController]
-    [Route("api/[controller]/public")]
-    // [Authorize(Roles = "Admin, SuperAdmin" )]
-    public class UserController : ControllerBase
+    [Route("api/users")]
+    public class UserController : CustomerBaseController
     {
         private readonly UserAccountService _userService;
 
@@ -19,38 +19,38 @@ namespace PototoTrade.Controllers.User
         [HttpGet]
         public async Task<IActionResult> GetUserList()
         {
-            var response = await _userService.GetUserList(User);
-            return response.Success ? Ok(response) : NotFound(response);
+            return MakeResponse(await _userService.GetUserList(User));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUser(int id)
         {
-            var response = await _userService.GetUser(id, User);
-            return response.Success ? Ok(response) : NotFound(response);
+            return MakeResponse(await _userService.GetUser(id, User));
         }
 
         [HttpPost]
-        public async Task<IActionResult> createUser(CreateNewAccount createUser)
+        public async Task<IActionResult> createUser(CreateUserDTO createUser)
         {
-            var response = await _userService.CreateUser(createUser, User);
-            return response.Success ? Ok(response) : BadRequest(response);
+            return MakeResponse(await _userService.CreateUser(createUser, User));
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var response = await _userService.DeleteUser(id);
-            return response.Success ? Ok(response) : NotFound(response);
+            return MakeResponse(await _userService.DeleteUser(id));
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, UpdateUserAccountDTO updateUserDto)
+        public async Task<IActionResult> UpdateUser(int id, UpdateUserDTO updateUserDto)
         {
-            var response = await _userService.updateUser(id, updateUserDto, User);
-            return response.Success ? Ok(response) : NotFound(response);
+            return MakeResponse(await _userService.updateUser(id, updateUserDto, User));
         }
 
+        [HttpGet("profile/{id}")]
+        public async Task<IActionResult> ProfileUser(int id)
+        {
+           return  MakeResponse(await _userService.GetUserProfile(id));  
+        }
 
     }
 }
