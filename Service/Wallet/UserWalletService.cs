@@ -99,29 +99,97 @@ namespace PototoTrade.Service.Wallet
             
         }
 
-        public async Task<bool> RequestRefund(int userId, decimal amount){
-            try{
-                var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
-                if (wallet == null){
+        public async Task<bool> RequestRefund(int buyerId, int sellerId, decimal amount)
+        {
+            try
+            {
+                var (buyerWallet, sellerWallet) = await _walletRepository.GetBuyerandSellerWalletByUserId(buyerId, sellerId);
+                if (buyerWallet == null || sellerWallet == null)
+                {
+                    Console.WriteLine("One or both wallets not found.");
                     return false;
                 }
-                wallet.OnHoldBalance += amount;
-                wallet.AvailableBalance -= amount;
-                wallet.UpdatedAt = DateTime.Now;
 
-                await _walletRepository.UpdateWalletAsync(wallet);
+                sellerWallet.AvailableBalance -= amount;
+                sellerWallet.OnHoldBalance += amount;
+                sellerWallet.UpdatedAt = DateTime.Now;
+
+                buyerWallet.OnHoldBalance += amount;
+                buyerWallet.UpdatedAt = DateTime.Now;
+
+                await _walletRepository.UpdateWalletAsync(sellerWallet);
+                await _walletRepository.UpdateWalletAsync(buyerWallet);
+
                 return true;
-            }catch(Exception e){
-                
-            // Log the exception (you can use a logging framework here)
-            Console.WriteLine($"An error occurred while processing refund request: {e.Message}");
-
-            // Return false in case of failure
-            return false;
+            }
+            catch (Exception e)
+            {
+                // Log the error
+                Console.WriteLine($"An error occurred while processing the refund: {e.Message}");
+                return false;
             }
         }
 
-            
+    
+        public async Task<bool> AllowRefund (int buyerId, int sellerId, decimal amount){
+            try
+            {
+                var (buyerWallet, sellerWallet) = await _walletRepository.GetBuyerandSellerWalletByUserId(buyerId, sellerId);
+                if (buyerWallet == null || sellerWallet == null)
+                {
+                    Console.WriteLine("One or both wallets not found.");
+                    return false;
+                }
+
+                sellerWallet.OnHoldBalance -= amount;
+                sellerWallet.UpdatedAt = DateTime.Now;
+
+                buyerWallet.AvailableBalance += amount;
+                buyerWallet.OnHoldBalance -= amount;
+                buyerWallet.UpdatedAt = DateTime.Now;
+
+                await _walletRepository.UpdateWalletAsync(sellerWallet);
+                await _walletRepository.UpdateWalletAsync(buyerWallet);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                // Log the error
+                Console.WriteLine($"An error occurred while processing the refund: {e.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> RejectRefund (int buyerId, int sellerId, decimal amount){
+            try
+            {
+                var (buyerWallet, sellerWallet) = await _walletRepository.GetBuyerandSellerWalletByUserId(buyerId, sellerId);
+                if (buyerWallet == null || sellerWallet == null)
+                {
+                    Console.WriteLine("One or both wallets not found.");
+                    return false;
+                }
+
+                sellerWallet.OnHoldBalance -= amount;
+                sellerWallet.AvailableBalance += amount;
+                sellerWallet.UpdatedAt = DateTime.Now;
+
+                buyerWallet.OnHoldBalance -= amount;
+                buyerWallet.UpdatedAt = DateTime.Now;
+
+                await _walletRepository.UpdateWalletAsync(sellerWallet);
+                await _walletRepository.UpdateWalletAsync(buyerWallet);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                // Log the error
+                Console.WriteLine($"An error occurred while processing the refund: {e.Message}");
+                return false;
+            }
+        }
     }
     
 }

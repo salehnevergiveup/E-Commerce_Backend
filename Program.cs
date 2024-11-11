@@ -1,5 +1,3 @@
-using MySqlConnector;
-using PototoTrade;
 using Microsoft.EntityFrameworkCore;
 using PototoTrade.Middleware.Filter;
 using PototoTrade.Service.User;
@@ -16,6 +14,16 @@ using PototoTrade.ServiceBusiness.Authentication;
 using PototoTrade.Repository.Role;
 using PototoTrade.Repository.MediaRepo;
 using PototoTrade.Service.Role;
+using PototoTrade.Repository.CartItems;
+using PototoTrade.Repository.Cart;
+using PototoTrade.Repository.Product;
+using PototoTrade.Service.CartItem;
+using PototoTrade.Service.ShoppingCart;
+using PototoTrade.Integrations;
+using PototoTrade.ServiceBusiness.LLM;
+using PototoTrade.Repositories;
+using PototoTrade.Repository.Report;
+using PototoTrade.Service.Report;
 using PototoTrade.Models;
 using Stripe;
 using PototoTrade.Repository.Wallet;
@@ -50,10 +58,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
 
 
-//User
+//Repos 
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
 builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>();
-builder.Services.AddScoped<RoleRepository , RoleRepositoryImp>();
+builder.Services.AddScoped<RoleRepository, RoleRepositoryImp>();
 builder.Services.AddScoped<MediaRepository, MediaRepositoryImp>();
 builder.Services.AddScoped<UserDetailsRepository, UserDetailsRepositoryImp>();
 builder.Services.AddScoped<WalletRepository,WalletRepositoryImp>();
@@ -80,7 +88,7 @@ var configuration = new ConfigurationBuilder()
     .SetBasePath(builder.Environment.ContentRootPath)
     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
     .Build();
-    
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -92,11 +100,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = configuration["JwtSettings:Issuer"],
             ValidAudience = configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"])), 
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"])),
             ClockSkew = TimeSpan.Zero // no addational default time 5min 
         };
     });
-StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 var app = builder.Build();
 
@@ -109,8 +116,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-app.UseAuthentication(); 
-app.UseAuthorization();  
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.UseMiddleware<FilterMiddleware>();
 
@@ -126,6 +133,10 @@ app.UseCookiePolicy(new CookiePolicyOptions
     MinimumSameSitePolicy = SameSiteMode.None,
     Secure = CookieSecurePolicy.Always
 });
+// Map SignalR hubs
+app.MapHub<CartHub>("/cartHub");
+app.MapHub<ChatHub>("/chatHub");// this  will be add when you create the live chathub 
+app.MapHub<NotificationHub>("/notificationHub"); //this is will be added when you create the notification  hub 
 
 //seeder for init data
 if (args.Length == 1 && args[0].ToLower() == "init")

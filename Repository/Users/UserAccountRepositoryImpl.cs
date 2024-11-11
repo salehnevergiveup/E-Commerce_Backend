@@ -18,7 +18,9 @@ namespace PototoTrade.Repository.User
 
         public async Task<List<UserAccount>> GetUsersList()
         {
-            return await _context.UserAccounts.ToListAsync();
+            return await _context.UserAccounts
+                 .Include(u => u.Role)
+                .Include(u => u.UserDetails).ToListAsync();
         }
 
         public async Task<int> CreateNewUser(UserAccount newUser)
@@ -31,18 +33,20 @@ namespace PototoTrade.Repository.User
             return newUser.Id;
         }
 
-        public async Task UpdateUserPasswordAsync(int id, UpdatePasswordDTO updatePasswordDto)
+        public async Task UpdateUserPasswordAsync(UserAccount user)
         {
-            var user = await this.GetUserByIdAsync(id);
-
-            //  _context.UserAccounts.Update(user);
+             _context.UserAccounts.Update(user);
 
             await _context.SaveChangesAsync();
         }
 
         public async Task<UserAccount?> GetUserByIdAsync(int Id)
         {
-            return await _context.UserAccounts.FirstOrDefaultAsync(u => u.Id == Id);
+            return await _context.UserAccounts.Include(u => u.Role)
+                                               .Include(u => u.Products)
+                                               .Include(u => u.UserDetails)
+                                               .Include(u => u.ProductReviews)
+                                               .FirstOrDefaultAsync(u => u.Id == Id);
         }
 
         public async Task<UserAccount?> GetUserByUserNameOrEmailAsync(string input)
@@ -53,7 +57,13 @@ namespace PototoTrade.Repository.User
                 .FirstOrDefaultAsync(u => u.Username == input || u.UserDetails.Any(d => d.Email == input));
         }
 
-        public async Task<bool> UpdateUserAsync(int id, UserAccount userAccount)
+        public async Task<UserAccount> GetUserByPhoneNumber(string phoneNumber)
+        {
+            return await _context.UserAccounts
+                         .Include(u => u.UserDetails)
+                         .FirstOrDefaultAsync(u => u.UserDetails.Any(d => d.PhoneNumber == phoneNumber));
+        }
+        public async Task<bool> UpdateUserAsync(UserAccount userAccount)
         {
             _context.UserAccounts.Update(userAccount);
             await _context.SaveChangesAsync();

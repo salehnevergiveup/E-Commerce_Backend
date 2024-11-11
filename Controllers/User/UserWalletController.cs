@@ -56,5 +56,35 @@ namespace PototoTrade.Controllers.User
             }
             return BadRequest("Failed to top up wallet.");
         }
+
+        [HttpPost("{buyerId}/request-refund")] //executed by users
+        public async Task <IActionResult> RequestRefund ([FromRoute] int buyerId, [FromBody] RefundDTO refundRequest){
+            var success = await _userWalletService.RequestRefund(buyerId, refundRequest.SellerId, refundRequest.Amount);
+
+            if (success){
+                return Ok("Refund successfully requested.");
+            }
+            return BadRequest("Failed to request for refund.");
+        }
+
+        [HttpPost("allow-refund")] //executed by admin
+        public async Task <IActionResult> AllowRefund ([FromBody] RefundDTO refundRequest){
+            var success = await _userWalletService.AllowRefund(refundRequest.BuyerId, refundRequest.SellerId, refundRequest.Amount);
+
+            if (success){
+                return Ok("Refund successfully allowed.");
+            }
+            return BadRequest("Failed to request for refund.");
+        }
+
+        [HttpPost("reject-refund")] //executed by admin
+        public async Task <IActionResult> RejectRefund ([FromBody] RefundDTO refundRequest){
+            var success = await _userWalletService.RejectRefund(refundRequest.BuyerId, refundRequest.SellerId, refundRequest.Amount);
+
+            if (success){
+                return Ok("Refund successfully rejected.");
+            }
+            return BadRequest("Failed to request for refund.");
+        }
     }
 }

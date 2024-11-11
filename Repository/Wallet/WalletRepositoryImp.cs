@@ -39,5 +39,16 @@ namespace PototoTrade.Repository.Wallet
         
         }
 
+        public async Task<(UserWallet? BuyerWallet, UserWallet? SellerWallet)> GetBuyerandSellerWalletByUserId(int buyerId, int sellerId)
+        {
+            var wallets = await _context.UserWallets
+                                        .Where(w => w.UserId == buyerId || w.UserId == sellerId)
+                                        .ToListAsync();
+
+            var buyerWallet = wallets.FirstOrDefault(w => w.UserId == buyerId);
+            var sellerWallet = wallets.FirstOrDefault(w => w.UserId == sellerId);
+
+            return (buyerWallet, sellerWallet);
+        }
     }
 }

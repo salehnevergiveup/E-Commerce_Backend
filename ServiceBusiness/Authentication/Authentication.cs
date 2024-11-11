@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using PototoTrade.Data;
 using PototoTrade.DTO.Auth;
 using PototoTrade.Models.User;
+using PototoTrade.Repository.MediaRepo;
 using PototoTrade.Repository.Role;
 using PototoTrade.Repository.Users;
 using PototoTrade.Repository.Wallet;
@@ -22,6 +23,8 @@ namespace PototoTrade.ServiceBusiness.Authentication
         private readonly UserDetailsRepository _userDetails;
         private readonly RoleRepository _roleRepository;
 
+        private readonly MediaRepository _mediaReposiotry;
+
         private readonly SessionRepository _SessionRepo;
         private readonly IHashing _hashing;
 
@@ -31,8 +34,9 @@ namespace PototoTrade.ServiceBusiness.Authentication
 
         private readonly IConfiguration _configuration;
 
-        public Authentication(IConfiguration configuration, UserAccountRepository userAccountRepo, IHashing hashing, SessionRepository sessionRepo, UserDetailsRepository userDetails, DBC bC, RoleRepository roleRepository, WalletRepository walleRepo)
+        public Authentication(IConfiguration configuration, MediaRepository mediaReposiotry, UserAccountRepository userAccountRepo, IHashing hashing, SessionRepository sessionRepo, UserDetailsRepository userDetails, DBC bC, RoleRepository roleRepository, WalletRepository walletRepo)
         {
+            _mediaReposiotry = mediaReposiotry;
             _userAccountRepo = userAccountRepo;
             _hashing = hashing;
             _configuration = configuration;
@@ -40,7 +44,7 @@ namespace PototoTrade.ServiceBusiness.Authentication
             _userDetails = userDetails;
             _context = bC;
             _roleRepository = roleRepository;
-            _walletRepo = walleRepo;
+            _walletRepo = walletRepo;
         }
 
         private async Task<JwtSecurityToken> CreateAccessToken(UserAccount user)
@@ -91,7 +95,8 @@ namespace PototoTrade.ServiceBusiness.Authentication
             var response = new ResponseModel<(string? AccessToken, string? RefreshToken)>
             {
                 Success = false,
-                Data = (null, null)
+                Data = ("", ""),
+                Message = "Login not allowed"
             };
             try
             {
@@ -104,6 +109,12 @@ namespace PototoTrade.ServiceBusiness.Authentication
                 if (user == null)
                 {
                     response.Message = "User not found.";
+                    return response;
+                }
+
+                if (user.Status != "Active")
+                {
+                    response.Message = "You are not allowed to login the current acount is " + user.Status;
                     return response;
                 }
 
@@ -159,7 +170,7 @@ namespace PototoTrade.ServiceBusiness.Authentication
 
                 var storedRefreshToken = await _SessionRepo.GetSessionByRefreshTokenAsync(refreshToken);
 
-                if (storedRefreshToken != null && !storedRefreshToken.IsRevoked && storedRefreshToken.ExpiresAt > DateTime.UtcNow)
+                if (storedRefreshToken != null)
                 {
                     storedRefreshToken.IsRevoked = true;
                     storedRefreshToken.RevokedAt = DateTime.UtcNow;
@@ -198,11 +209,22 @@ namespace PototoTrade.ServiceBusiness.Authentication
                 }
                 var storedRefreshToken = await _SessionRepo.GetSessionByRefreshTokenAsync(refreshToken);
 
-                if (storedRefreshToken == null || storedRefreshToken.IsRevoked || storedRefreshToken.ExpiresAt <= DateTime.UtcNow)
+                if (storedRefreshToken == null || storedRefreshToken.IsRevoked)
                 {
                     response.Message = "Refresh Token Expired";
                     return response;
                 }
+
+                //if the session expired revoke it
+                if (storedRefreshToken.ExpiresAt <= DateTime.UtcNow)
+                {
+                    storedRefreshToken.IsRevoked = true;
+                    storedRefreshToken.RevokedAt = DateTime.UtcNow;
+                    await _SessionRepo.UpdateSessionAsync(storedRefreshToken);
+                    response.Message = "Refresh Token Expired";
+                    return response;
+                }
+
                 var jwtHandler = new JwtSecurityTokenHandler();
 
                 if (!jwtHandler.CanReadToken(accessToken))
@@ -270,6 +292,7 @@ namespace PototoTrade.ServiceBusiness.Authentication
 
                 var existingUserUsername = await _userAccountRepo.GetUserByUserNameOrEmailAsync(userAccount.Username);
                 var existingUserEmail = await _userAccountRepo.GetUserByUserNameOrEmailAsync(userDetails.Email);
+                var existingPhoneNumber = await _userAccountRepo.GetUserByPhoneNumber(userDetails.PhoneNumber);
 
                 if (existingUserUsername != null)
                 {
@@ -280,6 +303,12 @@ namespace PototoTrade.ServiceBusiness.Authentication
                 if (existingUserEmail != null)
                 {
                     response.Message = "Email already exists.";
+                    return response;
+                }
+
+                if (existingPhoneNumber != null)
+                {
+                    response.Message = "Phone number already used by other account";
                     return response;
                 }
 
@@ -385,7 +414,9 @@ namespace PototoTrade.ServiceBusiness.Authentication
                     return response;
                 }
 
-                updatePasswordDto.NewPassword = _hashing.Hash(updatePasswordDto.NewPassword);
+                user.PasswordHash = _hashing.Hash(updatePasswordDto.NewPassword);
+
+                await _userAccountRepo.UpdateUserPasswordAsync(user); 
 
                 response.Success = true;
                 response.Message = "Password changed successfully.";

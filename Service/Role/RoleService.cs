@@ -1,10 +1,6 @@
 using System.Security.Claims;
-using PototoTrade.DTO.AdminPermission;
 using PototoTrade.DTO.Role;
-using PototoTrade.DTO.ShoppingCart;
-using PototoTrade.Enums;
 using PototoTrade.Models.Role;
-using PototoTrade.Models.Role.Role;
 using PototoTrade.Repository.Role;
 using PototoTrade.Repository.Users;
 using PototoTrade.Service.Utilities.Response;
@@ -22,11 +18,11 @@ public class RoleService
         _userAccountRepository = userAccountRepository;
     }
 
-    public async Task<ResponseModel<List<UpdateViewRoleAdminPermission>>> GetRolesList(ClaimsPrincipal claims)
+    public async Task<ResponseModel<List<GetRolesDTO>>> GetRolesList(ClaimsPrincipal claims, bool includeUsers)
     {
         var userRole = claims.FindFirst(ClaimTypes.Name)?.Value;
 
-        var response = new ResponseModel<List<UpdateViewRoleAdminPermission>>
+        var response = new ResponseModel<List<GetRolesDTO>>
         {
             Message = "No Roles Found",
             Data = null,
@@ -37,34 +33,42 @@ public class RoleService
         // {
         //     response.Message = "Unathorized Access";
         //     return response;
-
         // }
         
+
         var rolesPer = await _roleRepository.GetRolesAsync();
 
         if (!rolesPer.Any()) return response;
 
         response.Data = rolesPer.Select(r =>
         {
-            return new UpdateViewRoleAdminPermission
+            var permissions = r.AdminPermissions.ToList().First();
+            var users = new List<UserRoleDTO>();
+            if (includeUsers)
             {
-                Role = new UpdateViewRoleDTO
+                users = r.UserAccounts.Count > 0 ? r.UserAccounts.Select(u => new UserRoleDTO
                 {
-                    Description = r.Description,
-                    RoleName = r.RoleName,
-                    RoleType = r.RoleType,
-                    Id = r.Id
+                    Id = u.Id,
+                    Name = u.Name,
+                    RoleId = u.RoleId,
+                    Status = u.Status
+                }).ToList() : new List<UserRoleDTO>();
+            }
+            return new GetRolesDTO
+            {
+                Id = r.Id,
+                RoleName = r.RoleName,
+                RoleType = r.RoleType,
+                Description = r.Description,
+                CreatedAt = r.CreatedAt,
+                Permissions = new PermissionsRoleDTO
+                {
+                    CanCreate = permissions.CanCreate,
+                    CanDelete = permissions.CanDelete,
+                    CanEdit = permissions.CanEdit,
+                    CanView = permissions.CanView
                 },
-                Permission = r.AdminPermissions != null
-                ? new UpdateViewAdminPermissionDTO
-                {
-                    RoleId = r.Id,
-                    CanCreate = r.AdminPermissions.FirstOrDefault()?.CanCreate ?? false,
-                    CanView = r.AdminPermissions.FirstOrDefault()?.CanView ?? false,
-                    CanEdit = r.AdminPermissions.FirstOrDefault()?.CanEdit ?? false,
-                    CanDelete = r.AdminPermissions.FirstOrDefault()?.CanDelete ?? false
-                }
-                : null
+                Users = users
             };
         }).ToList();
 
@@ -76,11 +80,11 @@ public class RoleService
 
         return response;
     }
-    public async Task<ResponseModel<UpdateViewRoleAdminPermission>> GetRole(int id, ClaimsPrincipal claims)
+    public async Task<ResponseModel<GetRolesDTO>> GetRole(int id, ClaimsPrincipal claims)
     {
         var userRole = claims.FindFirst(ClaimTypes.Name)?.Value;
 
-        var response = new ResponseModel<UpdateViewRoleAdminPermission>
+        var response = new ResponseModel<GetRolesDTO>
         {
             Message = "No Roles Found",
             Data = null,
@@ -97,25 +101,32 @@ public class RoleService
 
         if (rolesPer == null) return response;
 
-        response.Data = new UpdateViewRoleAdminPermission
+        var permissions = rolesPer.AdminPermissions.ToList().First();
+
+        var users = rolesPer.UserAccounts.Count > 0 ? rolesPer.UserAccounts.Select(u => new UserRoleDTO
         {
-            Role = new UpdateViewRoleDTO
+            Id = u.Id,
+            Name = u.Name,
+            RoleId = u.RoleId,
+            Status = u.Status
+        }).ToList() : new List<UserRoleDTO>();
+
+        response.Data = new GetRolesDTO
+        {
+            Id = rolesPer.Id,
+            RoleName = rolesPer.RoleName,
+            RoleType = rolesPer.RoleType,
+            Description = rolesPer.Description,
+            CreatedAt = rolesPer.CreatedAt,
+            Permissions = new PermissionsRoleDTO
             {
-                Description = rolesPer.Description,
-                RoleName = rolesPer.RoleName,
-                RoleType = rolesPer.RoleType,
-                Id = rolesPer.Id
+                CanCreate = permissions.CanCreate,
+                CanDelete = permissions.CanDelete,
+                CanEdit = permissions.CanEdit,
+                CanView = permissions.CanView
             },
-            Permission = rolesPer.AdminPermissions != null
-                ? new UpdateViewAdminPermissionDTO
-                {
-                    RoleId = rolesPer.Id,
-                    CanCreate = rolesPer.AdminPermissions.FirstOrDefault()?.CanCreate ?? false,
-                    CanView = rolesPer.AdminPermissions.FirstOrDefault()?.CanView ?? false,
-                    CanEdit = rolesPer.AdminPermissions.FirstOrDefault()?.CanEdit ?? false,
-                    CanDelete = rolesPer.AdminPermissions.FirstOrDefault()?.CanDelete ?? false
-                }
-                : null
+            Users = users
+
         };
 
         if (response.Data != null)
@@ -127,17 +138,14 @@ public class RoleService
         return response;
     }
 
-    public async Task<ResponseModel<bool>> CreateRole(RoleAdminPermissionCreate rolePer, ClaimsPrincipal claims)
+    public async Task<ResponseModel<int>> CreateRole(CreateRoleDTO rolePer, ClaimsPrincipal claims)
     {
         var userRole = claims.FindFirst(ClaimTypes.Name)?.Value;
 
-        var role = rolePer.Role;
-        var permission = rolePer.Permission;
-
-        var response = new ResponseModel<bool>
+        var response = new ResponseModel<int>
         {
             Message = "Failed to create role",
-            Data = false,
+            Data = 0,
             Success = false
         };
 
@@ -146,45 +154,46 @@ public class RoleService
         //     response.Message = "Unauthorized Access";
         //     return response;
         // }
-        
-        if (role.RoleName == "Default_Admin" || role.RoleType == "SuperAdmin" || role.RoleType == "User")
-        {
-            response.Message = "Not Allowed To Create Role From This Type";
-            return response;
-        }
 
-        if (role == null || permission == null)
+        if (rolePer == null || rolePer.Permission == null)
         {
             response.Message = "No Role or Permission Provided";
             return response;
         }
 
-        if (role.RoleType != UserRolesEnum.Admin.ToString())
+        if (rolePer.RoleName == "Default_Admin")
         {
-            response.Message = "Role type must be Admin";
+            response.Message = "Not Allowed To Create Role From This Type";
             return response;
         }
 
         var newRole = new Roles
         {
-            RoleName = role.RoleName?.Trim(),
-            Description = role.Description?.Trim(),
-            RoleType = role.RoleType,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var newPermission = new AdminPermission
-        {
-            CanCreate = permission.CanCreate,
-            CanView = permission.CanView,
-            CanEdit = permission.CanEdit,
-            CanDelete = permission.CanDelete
+            RoleName = rolePer.RoleName,
+            Description = rolePer.Description?.Trim(),
+            RoleType = "Admin",
+            CreatedAt = DateTime.UtcNow,
+            AdminPermissions = new List<AdminPermission>
+            {
+                new AdminPermission
+                {
+                    CanCreate = rolePer.Permission.CanCreate,
+                    CanView = rolePer.Permission.CanView,
+                    CanEdit = rolePer.Permission.CanEdit,
+                    CanDelete = rolePer.Permission.CanDelete
+                }
+            }
         };
 
         try
         {
-            await _roleRepository.CreateRole(newRole, newPermission);
-            response.Data = true;
+            if (await _roleRepository.GetRoleByName(newRole.RoleName) != null)
+            {
+                response.Message = $"{newRole.RoleName} Name Is already Exist Try Anthoer Name Please";
+                return response;
+            }
+            var roleId = await _roleRepository.CreateRole(newRole);
+            response.Data = roleId;
             response.Success = true;
             response.Message = "Role created successfully";
         }
@@ -268,7 +277,7 @@ public class RoleService
         return response;
     }
 
-    public async Task<ResponseModel<bool>> UpdateRole(int roleId, UpdateViewRoleAdminPermission rolePer, ClaimsPrincipal claims)
+    public async Task<ResponseModel<bool>> UpdateRole(int roleId, UpdateRoleDTO rolePer, ClaimsPrincipal claims)
     {
         var userRole = claims.FindFirst(ClaimTypes.Name)?.Value;
 
@@ -285,61 +294,42 @@ public class RoleService
         //     response.Message = "Unauthorized Access";
         //     return response;
         // }
-
-        // Fetch the role to update
-        var roleToUpdate = await _roleRepository.GetRoleAsync(roleId);
-
-        if (roleToUpdate == null)
-        {
-            response.Message = "Role not found";
-            return response;
-        }
-         
-        if (roleToUpdate.RoleName == "Default_Admin" || roleToUpdate.RoleType == "SuperAdmin" || roleToUpdate.RoleType == "User")
-        {
-            response.Message = "Role Can Not Be Updated";
-            return response;
-        }
-
-        var permissionToUpdate = roleToUpdate.AdminPermissions.FirstOrDefault();
-
-        // Fetch the associated permissions
-        if (permissionToUpdate == null)
-        {
-            response.Message = "Permissions not found";
-            return response;
-        }
-
-        var roleData = rolePer.Role;
-        var permissionData = rolePer.Permission;
-
-        // Update Role Data
-        if (roleData != null)
-        {
-            if (!string.IsNullOrWhiteSpace(roleData.RoleName))
-            {
-                roleToUpdate.RoleName = roleData.RoleName.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(roleData.Description))
-            {
-                roleToUpdate.Description = roleData.Description.Trim();
-            }
-        }
-
-        // Update Permissions
-        if (permissionData != null)
-        {
-            // Update permissions only if provided
-            permissionToUpdate.CanCreate = permissionData.CanCreate;
-            permissionToUpdate.CanView = permissionData.CanView;
-            permissionToUpdate.CanEdit = permissionData.CanEdit;
-            permissionToUpdate.CanDelete = permissionData.CanDelete;
-        }
-
         try
         {
-            await _roleRepository.UpdateRole(roleToUpdate, permissionToUpdate);
+            // Fetch the role to update
+            var roleToUpdate = await _roleRepository.GetRoleAsync(roleId);
+
+            if (roleToUpdate == null)
+            {
+                response.Message = "Role not found";
+                return response;
+            }
+
+            if (roleToUpdate.RoleName == "Default_Admin" || roleToUpdate.RoleType == "SuperAdmin" || roleToUpdate.RoleType == "User")
+            {
+                response.Message = "Role Can Not Be Updated";
+                return response;
+            }
+
+            var permissionToUpdate = roleToUpdate.AdminPermissions.FirstOrDefault();
+
+            // Fetch the associated permissions
+            if (permissionToUpdate == null)
+            {
+                response.Message = "Permissions not found";
+                return response;
+            }
+
+            roleToUpdate.Description = string.IsNullOrWhiteSpace(rolePer.Description) ? roleToUpdate.Description : rolePer.Description;
+
+            if (rolePer.Permissions != null)
+            {
+                permissionToUpdate.CanCreate = rolePer.Permissions.CanCreate;
+                permissionToUpdate.CanView = rolePer.Permissions.CanView;
+                permissionToUpdate.CanEdit = rolePer.Permissions.CanEdit;
+                permissionToUpdate.CanDelete = rolePer.Permissions.CanDelete;
+            }
+            await _roleRepository.UpdateRole(roleToUpdate);
             response.Data = true;
             response.Success = true;
             response.Message = "Role updated successfully";

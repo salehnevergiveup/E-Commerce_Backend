@@ -1,12 +1,12 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using PototoTrade.DTO.Role;
 
 namespace PototoTrade.DTO.ShoppingCart;
 
 public class UpdateViewRoleDTO
 {
-    [Required]
-    public int Id {get; set;}
+ public int Id {get; set;}
     public string RoleName { get; set; } = null!;
 
     public string RoleType { get; set; } = null!;

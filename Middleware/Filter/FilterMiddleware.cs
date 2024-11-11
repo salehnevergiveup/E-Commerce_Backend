@@ -35,8 +35,8 @@
         
           
             var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-            if (segments[2].Equals("public", StringComparison.OrdinalIgnoreCase))
+           
+            if (segments.Length > 2 && segments[2].Equals("public", StringComparison.OrdinalIgnoreCase))
             {
                 await _next(context); // Bypass the filter chain for "/public" APIs
                 return;
