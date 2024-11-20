@@ -59,20 +59,34 @@ builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Str
 
 
 //Repos 
+
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
 builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>();
 builder.Services.AddScoped<RoleRepository, RoleRepositoryImp>();
 builder.Services.AddScoped<MediaRepository, MediaRepositoryImp>();
 builder.Services.AddScoped<UserDetailsRepository, UserDetailsRepositoryImp>();
-builder.Services.AddScoped<WalletRepository,WalletRepositoryImp>();
+builder.Services.AddScoped<ShoppingCartItemRepository, ShoppingCartItemRepositoryImp>();
+builder.Services.AddScoped<ShoppingCartRepository, ShoppingCartRrepositoryImp>();
+builder.Services.AddScoped<ProductRepository, ProductRepositoryImp>();
+builder.Services.AddScoped<ReportRepository,ReportRepositoryImp>(); 
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
+builder.Services.AddScoped<WalletRepository,WalletRepositoryImp>();
+
 
 //services & Business Service
 builder.Services.AddScoped<Authentication>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<ShoppingCartItemsService>();
+builder.Services.AddScoped<ShoppingCartService>();
+builder.Services.AddScoped<LlamaIntegration>();
+builder.Services.AddScoped<LLMService>();  
+builder.Services.AddScoped<ReportsService>(); 
+builder.Services.AddSignalR();
+builder.Services.AddHttpContextAccessor(); // for the websocket
 builder.Services.AddScoped<UserWalletService>();
+
 
 //MiddleWare Filters
 builder.Services.AddScoped<IFilter, JwtFilter>();
@@ -103,7 +117,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"])),
             ClockSkew = TimeSpan.Zero // no addational default time 5min 
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                // If the request is for one of the hubs
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (path.StartsWithSegments("/cartHub")  /*used for the shoppig cart realtime update */ 
+                    || path.StartsWithSegments("/chatHub") /*for the chathub used for the live chatting feature*/
+                    || path.StartsWithSegments("/notificationHub")) /*for the notification feature */
+                    )
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
+
 
 var app = builder.Build();
 

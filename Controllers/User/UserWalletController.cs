@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PototoTrade.Controllers.CustomerController;
 using PototoTrade.DTO.Wallet;
 using PototoTrade.Service.Wallet;
 using System;
@@ -8,7 +10,7 @@ namespace PototoTrade.Controllers.User
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserWalletController : ControllerBase
+    public class UserWalletController : CustomerBaseController
     {
         private readonly UserWalletService _userWalletService;
 
@@ -18,15 +20,11 @@ namespace PototoTrade.Controllers.User
         }
 
         // 1. Get User Wallet Balance
-        [HttpGet("{userId}/balance")]
-        public async Task<IActionResult> GetWalletBalance([FromRoute] int userId)
+        [HttpGet("balance")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetWalletBalance()
         {
-            var walletBalance = await _userWalletService.GetWalletBalanceAsync(userId);
-            if (walletBalance != null)
-            {
-                return Ok(walletBalance);
-            }
-            return NotFound("Wallet not found.");
+            return MakeResponse(await _userWalletService.GetWalletBalanceAsync(User));
         }
 
         // 2. Create Stripe Checkout Session for Wallet Top-Up using DTO
@@ -47,44 +45,36 @@ namespace PototoTrade.Controllers.User
 
         // 3. Update Wallet Balance After Payment Success using DTO
         [HttpPost("top-up")]
+        [Authorize(Roles = "User")]
+
         public async Task<IActionResult> TopUpWallet([FromBody] TopUpRequestDTO topUpRequest)
         {
-            var success = await _userWalletService.TopUpWalletAsync(topUpRequest.UserId, topUpRequest.Amount);
-            if (success)
-            {
-                return Ok("Wallet topped up successfully.");
-            }
-            return BadRequest("Failed to top up wallet.");
+            return MakeResponse(await _userWalletService.TopUpWalletAsync(User, topUpRequest.Amount));
         }
 
-        [HttpPost("{buyerId}/request-refund")] //executed by users
-        public async Task <IActionResult> RequestRefund ([FromRoute] int buyerId, [FromBody] RefundDTO refundRequest){
-            var success = await _userWalletService.RequestRefund(buyerId, refundRequest.SellerId, refundRequest.Amount);
 
-            if (success){
-                return Ok("Refund successfully requested.");
-            }
-            return BadRequest("Failed to request for refund.");
+
+        [HttpPost("request-refund")] //executed by users
+        [Authorize(Roles = "User")] 
+        public async Task <IActionResult> RequestRefund ([FromBody] RefundRequestDTO refundRequest){
+            return MakeResponse(await _userWalletService.RequestRefund(User, refundRequest.BuyerId, refundRequest.Amount));
         }
 
-        [HttpPost("allow-refund")] //executed by admin
-        public async Task <IActionResult> AllowRefund ([FromBody] RefundDTO refundRequest){
-            var success = await _userWalletService.AllowRefund(refundRequest.BuyerId, refundRequest.SellerId, refundRequest.Amount);
 
-            if (success){
-                return Ok("Refund successfully allowed.");
-            }
-            return BadRequest("Failed to request for refund.");
+
+        [HttpPost("allow-refund")] //executed by users //flow: pass refundrequestDTO, from id, get buyer and seller wallets, perform refund process, save
+        [Authorize(Roles = "User")]
+        public async Task <IActionResult> AllowRefund ([FromBody] RefundRequestDTO refundRequest){
+
+             return MakeResponse(await _userWalletService.AllowRefund(refundRequest.RefundRequestId));
         }
 
         [HttpPost("reject-refund")] //executed by admin
-        public async Task <IActionResult> RejectRefund ([FromBody] RefundDTO refundRequest){
-            var success = await _userWalletService.RejectRefund(refundRequest.BuyerId, refundRequest.SellerId, refundRequest.Amount);
+        public async Task <IActionResult> RejectRefund ([FromBody] RefundRequestDTO refundRequest){
 
-            if (success){
-                return Ok("Refund successfully rejected.");
-            }
-            return BadRequest("Failed to request for refund.");
+            return MakeResponse(await _userWalletService.RejectRefund(refundRequest.RefundRequestId));
         }
     }
 }
+
+//TODO: do frontend for the purchase confirmation (add 4. to the flow of checkout) and then fetch wallet data to the frontend.

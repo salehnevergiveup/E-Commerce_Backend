@@ -62,6 +62,7 @@ public partial class DBC : DbContext
     public virtual DbSet<UserSession> UserSessions { get; set; }
 
     public virtual DbSet<UserWallet> UserWallets { get; set; }
+    public virtual DbSet<RefundRequest> RefundRequests { get; set; }
 
     public virtual DbSet<WalletTransaction> WalletTransactions { get; set; }
 
@@ -711,6 +712,58 @@ public partial class DBC : DbContext
                 .HasForeignKey<UserWallet>(d => d.UserId)
                 .HasConstraintName("user_wallet_ibfk_1");
         });
+
+        modelBuilder.Entity<RefundRequest>(entity =>
+        {
+            entity.HasKey(e => e.RefundRequestId).HasName("PRIMARY");
+
+            entity.ToTable("refund_requests")
+                .UseCollation("utf8mb4_0900_ai_ci");
+
+            entity.Property(e => e.RefundRequestId)
+                .HasColumnName("RefundRequestId")
+                .IsRequired();
+
+            entity.Property(e => e.BuyerId)
+                .HasColumnName("BuyerId")
+                .IsRequired();
+
+            entity.Property(e => e.SellerId)
+                .HasColumnName("SellerId")
+                .IsRequired();
+
+            entity.Property(e => e.Amount)
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("Amount")
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .HasColumnType("varchar(50)")
+                .HasColumnName("Status")
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("CreatedAt");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                .HasColumnName("UpdatedAt");
+
+            // Foreign key constraints (optional but recommended for clarity)
+            entity.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(e => e.BuyerId)
+                .HasConstraintName("refund_requests_ibfk_1");
+
+            entity.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(e => e.SellerId)
+                .HasConstraintName("refund_requests_ibfk_2");
+        });
+
 
         modelBuilder.Entity<WalletTransaction>(entity =>
         {

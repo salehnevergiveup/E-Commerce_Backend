@@ -50,5 +50,25 @@ namespace PototoTrade.Repository.Wallet
 
             return (buyerWallet, sellerWallet);
         }
+
+       public async Task<int> CreateRefundRequest(RefundRequest refundRequest)
+        {
+            await _context.RefundRequests.AddAsync(refundRequest);
+            var result = await _context.SaveChangesAsync();
+            Console.WriteLine($"SaveChanges result: {result}");
+            return refundRequest.RefundRequestId;
+        }
+
+        public async Task<RefundRequest?> GetRefundRequestByIdAsync(int refundRequestId)
+        {
+            return await _context.RefundRequests.FirstOrDefaultAsync(r => r.RefundRequestId == refundRequestId);
+        }
+
+        public async Task UpdateRefundRequestAsync(RefundRequest refundRequest)
+        {
+            _context.RefundRequests.Update(refundRequest);
+            await _context.SaveChangesAsync();
+        }
+
     }
 }
