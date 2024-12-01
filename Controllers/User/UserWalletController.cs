@@ -44,28 +44,6 @@ namespace PototoTrade.Controllers.User
         //     return MakeResponse(await _userWalletService.TopUpWalletAsync(User, topUpRequest.Amount));
         // }
 
-
-
-        [HttpPost("request-refund")] //executed by users
-        [Authorize(Roles = "User")] 
-        public async Task <IActionResult> RequestRefund ([FromBody] RefundRequestDTO refundRequest){
-            return MakeResponse(await _userWalletService.RequestRefund(User, refundRequest.BuyerId, refundRequest.Amount));
-        }
-
-
-
-        [HttpPost("allow-refund")] //executed by users //flow: pass refundrequestDTO, from id, get buyer and seller wallets, perform refund process, save
-        [Authorize(Roles = "User")]
-        public async Task <IActionResult> AllowRefund ([FromBody] RefundRequestDTO refundRequest){
-
-             return MakeResponse(await _userWalletService.AllowRefund(refundRequest.RefundRequestId));
-        }
-
-        [HttpPost("reject-refund")] //executed by admin
-        public async Task <IActionResult> RejectRefund ([FromBody] RefundRequestDTO refundRequest){
-
-            return MakeResponse(await _userWalletService.RejectRefund(refundRequest.RefundRequestId));
-        }
     }
 }
 

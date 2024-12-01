@@ -70,5 +70,12 @@ namespace PototoTrade.Repository.Wallet
             await _context.SaveChangesAsync();
         }
 
+        public async Task<UserWallet?> GetPlatformWallet()
+        {
+            return await _context.UserWallets
+                .Include(w => w.User)
+                .FirstOrDefaultAsync(w => w.User.Role.RoleType == "SuperAdmin");
+        }
+
     }
 }

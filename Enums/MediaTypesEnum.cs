@@ -6,4 +6,7 @@ public enum MediaTypesEnum
     UserCover,
     ProductImage,
 
+    SystemAnnoucement,
+
+
 }

@@ -28,6 +28,11 @@ using PototoTrade.Models;
 using Stripe;
 using PototoTrade.Repository.Wallet;
 using PototoTrade.Service.Wallet;
+using Org.BouncyCastle.Math.EC.Rfc8032;
+using PototoTrade.Service.Product;
+using PototoTrade.Repository.BuyerItem;
+using PototoTrade.Service.BuyerItem;
+using PototoTrade.Repository.OnHoldingPayment;
 
 
 
@@ -71,11 +76,15 @@ builder.Services.AddScoped<MediaRepository, MediaRepositoryImp>();
 builder.Services.AddScoped<UserDetailsRepository, UserDetailsRepositoryImp>();
 builder.Services.AddScoped<ShoppingCartItemRepository, ShoppingCartItemRepositoryImp>();
 builder.Services.AddScoped<ShoppingCartRepository, ShoppingCartRrepositoryImp>();
-builder.Services.AddScoped<ProductRepository, ProductRepositoryImp>();
+builder.Services.AddScoped<ProductRepository, ProductRepositoryImpl>();
 builder.Services.AddScoped<ReportRepository,ReportRepositoryImp>(); 
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
 builder.Services.AddScoped<WalletRepository,WalletRepositoryImp>();
+builder.Services.AddScoped<WalletTransactionRepository,WalletTransactionRepositoryImpl>();
+builder.Services.AddScoped<PurchaseOrderRepository,PurchaseOrderRepositoryImpl>();
+builder.Services.AddScoped<BuyerItemRepository,BuyerItemRepositoryImpl>();
+builder.Services.AddScoped<OnHoldingPaymentHistoryRepository,OnHoldingPaymentHistoryRepositoryImpl>();
 
 
 //services & Business Service
@@ -90,6 +99,10 @@ builder.Services.AddScoped<ReportsService>();
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor(); // for the websocket
 builder.Services.AddScoped<UserWalletService>();
+builder.Services.AddScoped<ProductSrv>();
+builder.Services.AddScoped<ProductSrvBsn>();
+builder.Services.AddScoped<MediaSrv>();
+builder.Services.AddScoped<BuyerItemService>();
 
 
 //MiddleWare Filters
@@ -178,6 +191,7 @@ app.MapHub<ChatHub>("/chatHub");// this  will be add when you create the live ch
 app.MapHub<NotificationHub>("/notificationHub"); //this is will be added when you create the notification  hub 
 
 //seeder for init data
+//dotnet run -- init
 if (args.Length == 1 && args[0].ToLower() == "init")
     SeedData(app);
 

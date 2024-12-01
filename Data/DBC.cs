@@ -66,6 +66,8 @@ public partial class DBC : DbContext
 
     public virtual DbSet<WalletTransaction> WalletTransactions { get; set; }
 
+    public virtual DbSet<OnHoldingPaymentHistory> OnHoldingPaymentHistories { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseMySql("server=localhost;database=e_commerce_second_hand;user=root;password=abc123", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.37-mysql"));
 

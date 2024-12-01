@@ -11,6 +11,8 @@ namespace PototoTrade.Repository.Wallet{
         Task UpdateWalletAsync(UserWallet wallet);
         Task<(UserWallet? BuyerWallet, UserWallet? SellerWallet)> GetBuyerandSellerWalletByUserId (int buyerId, int sellerId);
 
+        Task<UserWallet?> GetPlatformWallet();
+
 
         //refund
         Task<int> CreateRefundRequest(RefundRequest refundRequest);

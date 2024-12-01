@@ -50,4 +50,30 @@ public class MediaRepositoryImp : MediaRepository
         return true;
     }
 
+    public async Task<List<Media>> GetMediaListBySourceIdAndType(int sourceId, string sourceType)
+    {
+        return await _context.Media
+            .Where(m => m.SourceId == sourceId && m.SourceType == sourceType)
+            .ToListAsync();
+    }
+
+    public async Task CreateMedia(Media media)
+    {
+        _context.Media.Add(media);
+        await _context.SaveChangesAsync();
+    }
+    public async Task DeleteMedia(List<Media> mediaList)
+    {
+        _context.Media.RemoveRange(mediaList);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<Media?> GetFirstMediaBySourceIdAndType(int sourceId, string sourceType)
+    {
+        return await _context.Media
+            .Where(m => m.SourceId == sourceId && m.SourceType == sourceType)
+            .OrderBy(m => m.Id) // Ensure the media with the smallest ID is selected
+            .FirstOrDefaultAsync();
+    }
+
 }

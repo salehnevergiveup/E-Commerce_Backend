@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Identity;
 using Stripe;
 using PototoTrade.Models.User;
 using Stripe.TestHelpers.Treasury;
+using PototoTrade.Service.Utilities.Exceptions;
+using PototoTrade.DTO.Common;
 using PototoTrade.Models;
 using Microsoft.Extensions.Options;
 using PototoTrade.Repository.User;
@@ -17,14 +19,19 @@ using PototoTrade.Repository.Users;
 
 namespace PototoTrade.Service.Wallet
 {
-    public class UserWalletService{
+    public class UserWalletService
+    {
+
         private readonly WalletRepository _walletRepository;
         private readonly UserAccountRepository _userAccountRepository;
         private readonly StripeSettings _stripeSettings;
 
-        public UserWalletService(WalletRepository walletRepository, IOptions<StripeSettings> stripeSettings, UserAccountRepository userAccountRepository)
+        private readonly WalletTransactionRepository _walletTransactionRepository;
+
+        public UserWalletService(WalletRepository walletRepository, WalletTransactionRepository walletTransactionRepository, IOptions<StripeSettings> stripeSettings, UserAccountRepository userAccountRepository)
         {
             _walletRepository = walletRepository;
+            _walletTransactionRepository = walletTransactionRepository;
             _stripeSettings = stripeSettings.Value;
             _userAccountRepository = userAccountRepository;
         }
@@ -32,21 +39,25 @@ namespace PototoTrade.Service.Wallet
         // 1. Get User Wallet Balance
         public async Task<ResponseModel<WalletBalanceDTO?>> GetWalletBalanceAsync(ClaimsPrincipal userClaims)
         {
-            var response = new ResponseModel<WalletBalanceDTO?>{
+            var response = new ResponseModel<WalletBalanceDTO?>
+            {
                 Success = false,
                 Data = null,
                 Message = "Failed to retrieve user wallet balance"
             };
 
-            try{
+            try
+            {
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-                if (userId == 0){
+                if (userId == 0)
+                {
                     response.Message = "Invalid Request";
                     return response;
                 }
 
                 var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
-                if (wallet == null){
+                if (wallet == null)
+                {
                     response.Message = "Wallet cannot be found";
                     return response;
                 }
@@ -60,11 +71,13 @@ namespace PototoTrade.Service.Wallet
                 response.Data = walletBalanceDTO;
                 response.Success = true;
                 response.Message = "User wallet balance retrieved successfully";
-            }catch (Exception e){
+            }
+            catch (Exception e)
+            {
                 response.Message = $"An error occurred: {e.Message}";
             }
             return response;
-            }
+        }
 
 
         // 2. Create Stripe Checkout Session
@@ -157,7 +170,8 @@ namespace PototoTrade.Service.Wallet
         // 3. Update Wallet Balance After Payment
         public async Task<ResponseModel<bool>> TopUpWalletAsync(string userId, decimal amount) //if doesnt work in future, change to claimsprincipal to fetch userid
         {
-            var response = new ResponseModel<bool>{
+            var response = new ResponseModel<bool>
+            {
                 Success = false,
                 Data = false,
                 Message = "Failed to topup user wallet balance"
@@ -181,8 +195,10 @@ namespace PototoTrade.Service.Wallet
                 response.Data = true;
                 response.Success = true;
                 response.Message = "User wallet updated successfully";
- 
-            }catch (Exception e){
+
+            }
+            catch (Exception e)
+            {
                 response.Message = $"An error occurred: {e.Message}";
             }
             return response;
@@ -262,126 +278,160 @@ namespace PototoTrade.Service.Wallet
             return response;
         }
 
-    
-    public async Task<ResponseModel<bool>> AllowRefund(int refundRequestId)
-    {
-        var response = new ResponseModel<bool>
-        {
-            Success = false,
-            Data = false,
-            Message = "Failed to allow refund"
-        };
 
-        try
+        public async Task RefundAmount( int sellerUserId, int buyerUserId, decimal refundAmount)
         {
-            //fetch refund request from db
-            var refundRequest = await _walletRepository.GetRefundRequestByIdAsync(refundRequestId);
-            if (refundRequest == null || refundRequest.Status != "Pending")
+            var sellerWallet = await _walletRepository.GetWalletByUserIdAsync(sellerUserId);
+            var buyerWallet = await _walletRepository.GetWalletByUserIdAsync(buyerUserId);
+
+            if (sellerWallet == null || buyerWallet == null)
             {
-                Console.WriteLine($"{refundRequest}");
-                response.Message = $"Refund request not found or it is not pending. {refundRequest}";
-                return response;
+                throw new CustomException<GeneralMessageDTO>(
+                    ExceptionEnum.GetException("WALLET_NOT_FOUND"),
+                    new GeneralMessageDTO
+                    {
+                        Message = "Seller or buyer wallet not found.",
+                        Success = false
+                    }
+                );
             }
 
-            //get both buyer and seller wallet
-            var (buyerWallet, sellerWallet) = await _walletRepository.GetBuyerandSellerWalletByUserId(refundRequest.BuyerId, refundRequest.SellerId);
-            if (buyerWallet == null || sellerWallet == null)
-            {
-                response.Message = "Failed to allow refund as one or both wallets could not be found.";
-                return response;
-            }
 
-            //deduct amount from seller balance
-            sellerWallet.OnHoldBalance -= refundRequest.Amount;
-            sellerWallet.UpdatedAt = DateTime.Now;
-
-            //add amount to buyer wallet
-            buyerWallet.AvailableBalance += refundRequest.Amount;
-            buyerWallet.OnHoldBalance -= refundRequest.Amount;
-            buyerWallet.UpdatedAt = DateTime.Now;
-
-            //save
+            sellerWallet.OnHoldBalance -= refundAmount;
             await _walletRepository.UpdateWalletAsync(sellerWallet);
+
+            var sellerTransaction = new WalletTransaction
+            {
+                WalletId = sellerWallet.Id,
+                Amount = -refundAmount,
+                TransactionType = "Product Refund",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _walletTransactionRepository.CreateTransaction(sellerTransaction);
+
+            buyerWallet.AvailableBalance += refundAmount;
             await _walletRepository.UpdateWalletAsync(buyerWallet);
 
-            //update status
-            refundRequest.Status = "Approved";
-            refundRequest.UpdatedAt = DateTime.UtcNow;
-
-            await _walletRepository.UpdateRefundRequestAsync(refundRequest);
-
-            response.Data = true;
-            response.Success = true;
-            response.Message = "Refund allowed successfully";
+            var buyerTransaction = new WalletTransaction
+            {
+                WalletId = buyerWallet.Id,
+                Amount = refundAmount,
+                TransactionType = "Fund from Seller Refund",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _walletTransactionRepository.CreateTransaction(buyerTransaction);
         }
-        catch (Exception e)
+
+        public async Task<ResponseModel<bool>> RejectRefund(int refundRequestId)
         {
-            // Log the error
-            Console.WriteLine($"An error occurred while processing the refund: {e.Message}");
-            response.Message = $"An error occurred: {e.Message}";
+            var response = new ResponseModel<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Failed to reject refund"
+            };
+
+            try
+            {
+                //fetch refund request from db
+                var refundRequest = await _walletRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null || refundRequest.Status != "Pending")
+                {
+                    response.Message = "Refund request not found or it is not pending.";
+                    return response;
+                }
+
+                //get both buyer and seller wallet
+                var (buyerWallet, sellerWallet) = await _walletRepository.GetBuyerandSellerWalletByUserId(refundRequest.BuyerId, refundRequest.SellerId);
+                if (buyerWallet == null || sellerWallet == null)
+                {
+                    response.Message = "Failed to allow refund as one or both wallets could not be found.";
+                    return response;
+                }
+
+                //deduct amount from seller balance
+
+                sellerWallet.OnHoldBalance -= refundRequest.Amount;
+                sellerWallet.AvailableBalance += refundRequest.Amount;
+                sellerWallet.UpdatedAt = DateTime.Now;
+
+                //add amount to buyer wallet
+                buyerWallet.OnHoldBalance -= refundRequest.Amount;
+                buyerWallet.UpdatedAt = DateTime.Now;
+                //save
+                await _walletRepository.UpdateWalletAsync(sellerWallet);
+                await _walletRepository.UpdateWalletAsync(buyerWallet);
+
+                //update status
+                refundRequest.Status = "Rejected";
+                refundRequest.UpdatedAt = DateTime.UtcNow;
+
+                await _walletRepository.UpdateRefundRequestAsync(refundRequest);
+
+                response.Data = true;
+                response.Success = true;
+                response.Message = "Refund rejected successfully";
+            }
+            catch (Exception e)
+            {
+                // Log the error
+                Console.WriteLine($"An error occurred while processing the refund: {e.Message}");
+                response.Message = $"An error occurred: {e.Message}";
+            }
+
+            return response;
         }
 
-        return response;
+        public async Task ChargeFee(int userId, decimal feeAmount)
+        {
+            var userWallet = await _walletRepository.GetWalletByUserIdAsync(userId);
+            if (userWallet == null)
+            {
+                throw new CustomException<GeneralMessageDTO>(
+                    ExceptionEnum.GetException("WALLET_NOT_FOUND")
+                );
+            }
+
+            if (userWallet.AvailableBalance < feeAmount)
+            {
+                throw new CustomException<GeneralMessageDTO>(
+                    ExceptionEnum.GetException("INSUFFICIENT_BALANCE")
+                );
+            }
+
+            userWallet.AvailableBalance -= feeAmount;
+            await _walletRepository.UpdateWalletAsync(userWallet);
+
+            var adminWallet = await _walletRepository.GetPlatformWallet();
+            if (adminWallet == null)
+            {
+                throw new CustomException<GeneralMessageDTO>(
+                    ExceptionEnum.GetException("PLATFORM_WALLET_NOT_FOUND")
+                );
+            }
+
+            adminWallet.AvailableBalance += feeAmount;
+            await _walletRepository.UpdateWalletAsync(adminWallet);
+
+            var transaction = new WalletTransaction
+            {
+                WalletId = userWallet.Id,
+                Amount = -feeAmount,
+                TransactionType = "Charge Fee",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _walletTransactionRepository.CreateTransaction(transaction);
+
+            var AdminAddFundtransaction = new WalletTransaction
+            {
+                WalletId = adminWallet.Id,
+                Amount = feeAmount,
+                TransactionType = "Revenue",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _walletTransactionRepository.CreateTransaction(AdminAddFundtransaction);
+        }
+
     }
-
-
-        public async Task<ResponseModel<bool>> RejectRefund (int refundRequestId)
-        {var response = new ResponseModel<bool>
-        {
-            Success = false,
-            Data = false,
-            Message = "Failed to reject refund"
-        };
-
-        try
-        {
-            //fetch refund request from db
-            var refundRequest = await _walletRepository.GetRefundRequestByIdAsync(refundRequestId);
-            if (refundRequest == null || refundRequest.Status != "Pending")
-            {
-                response.Message = "Refund request not found or it is not pending.";
-                return response;
-            }
-
-            //get both buyer and seller wallet
-            var (buyerWallet, sellerWallet) = await _walletRepository.GetBuyerandSellerWalletByUserId(refundRequest.BuyerId, refundRequest.SellerId);
-            if (buyerWallet == null || sellerWallet == null)
-            {
-                response.Message = "Failed to allow refund as one or both wallets could not be found.";
-                return response;
-            }
-
-            //deduct amount from seller balance
-
-            sellerWallet.OnHoldBalance -= refundRequest.Amount;
-            sellerWallet.AvailableBalance += refundRequest.Amount;
-            sellerWallet.UpdatedAt = DateTime.Now;
-
-            //add amount to buyer wallet
-            buyerWallet.OnHoldBalance -= refundRequest.Amount;
-            buyerWallet.UpdatedAt = DateTime.Now;
-            //save
-            await _walletRepository.UpdateWalletAsync(sellerWallet);
-            await _walletRepository.UpdateWalletAsync(buyerWallet);
-
-            //update status
-            refundRequest.Status = "Rejected";
-            refundRequest.UpdatedAt = DateTime.UtcNow;
-
-            await _walletRepository.UpdateRefundRequestAsync(refundRequest);
-
-            response.Data = true;
-            response.Success = true;
-            response.Message = "Refund rejected successfully";
-        }
-        catch (Exception e)
-        {
-            // Log the error
-            Console.WriteLine($"An error occurred while processing the refund: {e.Message}");
-            response.Message = $"An error occurred: {e.Message}";
-        }
-
-        return response;}
-        }
-        }
+}
 
