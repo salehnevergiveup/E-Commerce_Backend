@@ -44,7 +44,8 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.WithOrigins("http://localhost:3000")
+        builder.WithOrigins("http://localhost:3000","https://js.stripe.com",
+            "https://checkout.stripe.com")
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials(); // Allow cookies to be sent
@@ -56,6 +57,9 @@ builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+var stripeSettings = builder.Configuration.GetSection("Stripe").Get<StripeSettings>();
+StripeConfiguration.ApiKey = stripeSettings.SecretKey;
+
 
 
 //Repos 

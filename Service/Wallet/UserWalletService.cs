@@ -10,16 +10,23 @@ using Microsoft.AspNetCore.Identity;
 using Stripe;
 using PototoTrade.Models.User;
 using Stripe.TestHelpers.Treasury;
+using PototoTrade.Models;
+using Microsoft.Extensions.Options;
+using PototoTrade.Repository.User;
+using PototoTrade.Repository.Users;
 
 namespace PototoTrade.Service.Wallet
 {
     public class UserWalletService{
-    
         private readonly WalletRepository _walletRepository;
+        private readonly UserAccountRepository _userAccountRepository;
+        private readonly StripeSettings _stripeSettings;
 
-        public UserWalletService(WalletRepository walletRepository)
+        public UserWalletService(WalletRepository walletRepository, IOptions<StripeSettings> stripeSettings, UserAccountRepository userAccountRepository)
         {
             _walletRepository = walletRepository;
+            _stripeSettings = stripeSettings.Value;
+            _userAccountRepository = userAccountRepository;
         }
 
         // 1. Get User Wallet Balance
@@ -46,7 +53,7 @@ namespace PototoTrade.Service.Wallet
 
                 var walletBalanceDTO = new WalletBalanceDTO
                 {
-                    UserId = wallet.UserId,
+                    //UserId = wallet.UserId,
                     AvailableBalance = wallet.AvailableBalance,
                     OnHoldBalance = wallet.OnHoldBalance
                 };
@@ -61,21 +68,42 @@ namespace PototoTrade.Service.Wallet
 
 
         // 2. Create Stripe Checkout Session
-        public async Task<string> CreateTopUpSessionAsync(int userId, decimal amount, string currency)
+        public async Task<ResponseModel<string>> CreateTopUpSessionAsync(ClaimsPrincipal userClaims, decimal amount, string currency)
         {
-            // var userId = userClaims.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            // if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var parsedUserId))
-            // {
-            //     throw new Exception("Invalid user ID.");
-            // }
+            var response = new ResponseModel<string>{
+                Success = false,
+                Data = "",
+                Message = "Failed to create wallet top up session"
+            };
+
+            var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
+                if (userId == 0){
+                    response.Message = "Invalid Request";
+                    return response;
+                }
+            //validate inputs
+            if (amount <= 0)
+                throw new Exception("Amount must be greater than zero.");
 
             var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
             if (wallet == null)
                 throw new Exception("User wallet not found.");
 
+             var userAccount = await _userAccountRepository.GetUserByIdAsync(userId);
+            if (userAccount == null)
+            {
+                response.Message = "User account not found.";
+                return response;
+            }
+
+            var userName = userAccount.Name;
+
+            // Generate a unique reference ID for the transaction
+            var referenceId = Guid.NewGuid().ToString();
+
             var options = new SessionCreateOptions
-            { 
-                PaymentMethodTypes = new List<string> { "card" },
+            {
+                PaymentMethodTypes = new List<string> { "card", "fpx", "grabpay" },
                 LineItems = new List<SessionLineItemOptions>
                 {
                     new SessionLineItemOptions
@@ -86,25 +114,48 @@ namespace PototoTrade.Service.Wallet
                             UnitAmount = (long)(amount * 100), // Amount in cents
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
-                                Name = "Wallet Top-Up"
+                                Name = $"Confirm Top up amount for {userName}'s wallet: \n",
+                                Description = "Add funds to your wallet for future purchases."
                             }
                         },
                         Quantity = 1
                     }
                 },
                 Mode = "payment",
-                SuccessUrl = $"https://yourdomain.com/api/wallet/payment-success?userId={userId}",
-                CancelUrl = "https://yourdomain.com/payment-cancel"
+                SuccessUrl = "http://localhost:3000/user/profile", //$"https://yourdomain.com/success?session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = "http://localhost:3000/user/profile",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "userId", userId.ToString() },
+                    { "referenceId", referenceId },
+                    { "transactionType", "wallet-topup" }
+                }
             };
 
-            var service = new SessionService();
-            var session = await service.CreateAsync(options);
-
-            return session.Url;
+            try
+            {
+                var service = new SessionService();
+                var session = await service.CreateAsync(options);
+                Console.WriteLine(session.Id);
+                response.Data = session.Url;
+                response.Success = true;
+                response.Message = "Stripe session created: {session.Id}";
+                return response;
+            }
+            catch (StripeException ex)
+            {
+                Console.WriteLine($"Stripe error: {ex.Message}");
+                throw new Exception("Failed to create Stripe Checkout session. Please try again later.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+                throw;
+            }
         }
 
         // 3. Update Wallet Balance After Payment
-        public async Task<ResponseModel<bool>> TopUpWalletAsync(ClaimsPrincipal userClaims, decimal amount)
+        public async Task<ResponseModel<bool>> TopUpWalletAsync(string userId, decimal amount) //if doesnt work in future, change to claimsprincipal to fetch userid
         {
             var response = new ResponseModel<bool>{
                 Success = false,
@@ -113,13 +164,12 @@ namespace PototoTrade.Service.Wallet
             };
 
             try{
-                var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-                if (userId == 0){
+                 var parsedUserId = int.Parse(userId);
+                if (parsedUserId == 0){
                     response.Message = "Invalid Request";
                     return response;
                 }
-
-                var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
+                var wallet = await _walletRepository.GetWalletByUserIdAsync(parsedUserId);
                 if (wallet == null){
                     response.Message = "Wallet cannot be found";
                     return response;
@@ -138,29 +188,6 @@ namespace PototoTrade.Service.Wallet
             return response;
             }
     
-        //     var userId
-        //     try{
-        //     var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
-        //     if (wallet == null)
-        //     {
-        //         return false;                 // Wallet not found, return false or handle accordingly
-        //     }
-        //     wallet.AvailableBalance += amount;
-        //     wallet.UpdatedAt = DateTime.Now;
-
-        //     await _walletRepository.UpdateWalletAsync(wallet);
-        //     return true;
-
-        //     }catch(Exception e){
-                
-        //     // Log the exception (you can use a logging framework here)
-        //     Console.WriteLine($"An error occurred while topping up the wallet: {e.Message}");
-
-        //     // Return false in case of failure
-        //     return false;
-        //     }
-            
-        // }
 
         public async Task<ResponseModel<bool>> RequestRefund(ClaimsPrincipal userClaims, int buyerId, decimal amount)
         {

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace PototoTrade.Controllers.User
 {
-    [Route("api/[controller]")]
+    [Route("api/wallet")]
     [ApiController]
     public class UserWalletController : CustomerBaseController
     {
@@ -31,26 +31,18 @@ namespace PototoTrade.Controllers.User
         [HttpPost("top-up-session")]
         public async Task<IActionResult> CreateTopUpSession([FromBody] TopUpRequestDTO topUpRequest)
         {
-            try
-            {
-                var sessionUrl = await _userWalletService.CreateTopUpSessionAsync(
-                    topUpRequest.UserId, topUpRequest.Amount, topUpRequest.Currency);
-                return Ok(new { Url = sessionUrl });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
+            return MakeResponse(await _userWalletService.CreateTopUpSessionAsync(
+                    User, topUpRequest.Amount, topUpRequest.Currency));
         }
 
         // 3. Update Wallet Balance After Payment Success using DTO
-        [HttpPost("top-up")]
-        [Authorize(Roles = "User")]
+        // [HttpPost("top-up")]
+        // [Authorize(Roles = "User")]
 
-        public async Task<IActionResult> TopUpWallet([FromBody] TopUpRequestDTO topUpRequest)
-        {
-            return MakeResponse(await _userWalletService.TopUpWalletAsync(User, topUpRequest.Amount));
-        }
+        // public async Task<IActionResult> TopUpWallet([FromBody] TopUpRequestDTO topUpRequest)
+        // {
+        //     return MakeResponse(await _userWalletService.TopUpWalletAsync(User, topUpRequest.Amount));
+        // }
 
 
 
