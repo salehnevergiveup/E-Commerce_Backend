@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.CartItem;
 using PototoTrade.Service.CartItem;
 using PototoTrade.Service.Utilities.Response;
@@ -9,7 +9,7 @@ namespace PototoTrade.Controllers.ShoppingCartItem
 {
     [Route("api/cartitems")]
     [ApiController]
-    public class ShoppingCartItemController : CustomerBaseController
+    public class ShoppingCartItemController : CustomBaseController
     {
         ShoppingCartItemsService _shoppingCartItemsService;
 

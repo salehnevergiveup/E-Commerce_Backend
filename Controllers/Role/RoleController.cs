@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.Role;
 using PototoTrade.Service.Role;
 
@@ -10,7 +10,7 @@ namespace PototoTrade.Controllers.Role
     [Route("api/roles")]
     [ApiController]
     [Authorize(Roles = "SuperAdmin" )]
-    public class RoleController : CustomerBaseController
+    public class RoleController : CustomBaseController
     {
         RoleService _roleService;
 

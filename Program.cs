@@ -23,6 +23,9 @@ using PototoTrade.ServiceBusiness.LLM;
 using PototoTrade.Repositories;
 using PototoTrade.Repository.Report;
 using PototoTrade.Service.Report;
+using PototoTrade.Service.Reivew;
+using PototoTrade.Repository.ReivewRepo;
+using PotatoTrade.Repository.ReviewRepo;
 
 
 
@@ -59,6 +62,7 @@ builder.Services.AddScoped<ShoppingCartItemRepository, ShoppingCartItemRepositor
 builder.Services.AddScoped<ShoppingCartRepository, ShoppingCartRrepositoryImp>();
 builder.Services.AddScoped<ProductRepository, ProductRepositoryImp>();
 builder.Services.AddScoped<ReportRepository,ReportRepositoryImp>(); 
+builder.Services.AddScoped<ReviewRepository, ReviewRepositoryImpl>(); 
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
 
@@ -71,6 +75,7 @@ builder.Services.AddScoped<ShoppingCartService>();
 builder.Services.AddScoped<LlamaIntegration>();
 builder.Services.AddScoped<LLMService>();  
 builder.Services.AddScoped<ReportsService>(); 
+builder.Services.AddScoped<ReviewService>(); 
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor(); // for the websocket
 

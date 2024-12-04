@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.ReportDTO;
 using PototoTrade.Service.Report;
 
@@ -9,7 +9,7 @@ namespace PototoTrade.Controllers.Report
     [Route("api/report")]
     [ApiController]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public class ReportsController : CustomerBaseController
+    public class ReportsController : CustomBaseController
     {
         private readonly ReportsService _reportService;
 
