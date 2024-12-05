@@ -7,6 +7,7 @@ namespace PototoTrade.Service.Utilities.Exceptions
             { "PRODUCT_CATEGORY_EXISTED", new ExceptionDetail { Success = false, Message = "Product Category Name Already Existed", Code = "1001" }},
             { "PRODUCT_CATEGORY_NOT_FOUND", new ExceptionDetail { Success = false, Message = "Product Category Not Found", Code = "1002" }},
             { "PRODUCT_NOT_FOUND", new ExceptionDetail { Success = false, Message = "Product Category Not Found", Code = "1003" }},
+            { "PRODUCT_NOT_DELETABLE", new ExceptionDetail { Success = false, Message = "The product cannot be deleted because status is not 'available'.", Code = "1004" } },
             { "USER_NOT_FOUND", new ExceptionDetail { Success = false, Message = "User not found.", Code = "001" } },
             { "WALLET_NOT_FOUND", new ExceptionDetail { Success = false, Message = "Wallet not found.", Code = "201" } },
             { "INSUFFICIENT_BALANCE", new ExceptionDetail { Success = false, Message = "Insufficient balance.", Code = "202" } },

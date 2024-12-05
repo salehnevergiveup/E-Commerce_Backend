@@ -96,8 +96,15 @@ public class ProductRepositoryImpl : ProductRepository
     public async Task<Products?> GetProductById(int productId)
     {
         return await _context.Products
-            .Include(p => p.User) 
+            .Include(p => p.User)
             .FirstOrDefaultAsync(p => p.Id == productId);
     }
+
+    public async Task DeleteProductAsync(Products product)
+    {
+        _context.Products.Remove(product);
+        await _context.SaveChangesAsync();
+    }
+
 
 }
