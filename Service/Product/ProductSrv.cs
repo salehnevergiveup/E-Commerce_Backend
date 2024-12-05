@@ -483,13 +483,10 @@ namespace PototoTrade.Service.Product
                        
                     );
                 }
-
-
                 if(product.MediaBoolean){
                     await _mediaService.DeleteMedia(product.Id, "PRODUCT");
                 }
                 
-
                 await _productRepository.DeleteProductAsync(product);
 
                 return new ResponseModel<T>
