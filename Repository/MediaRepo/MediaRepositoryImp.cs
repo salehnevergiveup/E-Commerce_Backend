@@ -23,6 +23,11 @@ public class MediaRepositoryImp : MediaRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task DeleteMedia(Media media) {
+       _context.Media.Remove(media); 
+       await _context.SaveChangesAsync(); 
+    }
+
     public async Task DeleteMediaBySourceId(int sourceId)
     {
         var mediaToDelete = _context.Media.Where(m => m.SourceId == sourceId).ToList();
@@ -41,6 +46,13 @@ public class MediaRepositoryImp : MediaRepository
     {
         return await _context.Media
             .FirstOrDefaultAsync(m => m.SourceId == sourceId && m.SourceType == sourceType);
+    }
+
+      public async Task<List<Media>> GetMediaListBySourceIdAndType(int sourceId, string sourceType)
+    {
+        return await _context.Media
+            .Where(m => m.SourceId == sourceId && m.SourceType == sourceType)
+            .ToListAsync();
     }
 
     public async Task<bool> UpdateMedias(int sourceId, List<Media> medias)

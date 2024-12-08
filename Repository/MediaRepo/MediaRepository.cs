@@ -9,7 +9,12 @@ public interface MediaRepository
 
     public Task  CreateMedias(int sourceId, List<Media> medias); 
 
+    Task<List<Media>> GetMediaListBySourceIdAndType(int sourceId, string sourceType);
+
     public Task DeleteMediaBySourceId(int sourceId);
 
     public Task<bool> UpdateMedias(int sourceId , List<Media> medias);
+
+    
+    public  Task DeleteMedia(Media media);
 }
