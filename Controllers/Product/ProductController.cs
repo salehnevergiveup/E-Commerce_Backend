@@ -118,6 +118,12 @@ namespace PototoTrade.Controllers.Product
         {
             return MakeResponse(await _productService.ViewProductDetails<GeneralMessageDTO>(productId, User));
         }
+
+        [HttpDelete("delete-product")]
+        public async Task<IActionResult> DeleteProduct([FromQuery] int productId)
+        {
+            return MakeResponse(await _productService.DeleteProduct<GeneralMessageDTO>(productId, User));
+        }
     }
 
 }

@@ -415,14 +415,15 @@ namespace PototoTrade.Service.Product
 
                 if (editProductDto.updateMediaBoolean && editProductDto.Media != null)
                 {
-                    await _mediaService.DeleteMedia(existingProduct.Id, "PRODUCT");
-
+                    if (existingProduct.MediaBoolean)
+                    {
+                        await _mediaService.DeleteMedia(existingProduct.Id, "PRODUCT");
+                    }
                     foreach (var mediaDto in editProductDto.Media)
                     {
                         await _mediaService.CreateMedia(existingProduct.Id, "PRODUCT", mediaDto.MediaUrl);
                     }
                 }
-
                 await _productRepository.UpdateProduct(existingProduct);
 
                 return new ResponseModel<T>
@@ -456,6 +457,70 @@ namespace PototoTrade.Service.Product
                 };
             }
         }
+
+        public async Task<ResponseModel<T>> DeleteProduct<T>(int productId, ClaimsPrincipal userClaims)
+        {
+            try
+            {
+                var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
+                var product = await _productRepository.GetProductById(productId);
+                if (product == null)
+                {
+                    throw new CustomException<GeneralMessageDTO>(
+                        ExceptionEnum.GetException("PRODUCT_NOT_FOUND"),
+                        new GeneralMessageDTO
+                        {
+                            Message = "Product not found.",
+                            Success = false
+                        }
+                    );
+                }
+
+                if (product.Status != "available")
+                {
+                    throw new CustomException<GeneralMessageDTO>(
+                        ExceptionEnum.GetException("PRODUCT_NOT_DELETABLE")
+                       
+                    );
+                }
+                if(product.MediaBoolean){
+                    await _mediaService.DeleteMedia(product.Id, "PRODUCT");
+                }
+                
+                await _productRepository.DeleteProductAsync(product);
+
+                return new ResponseModel<T>
+                {
+                    Success = true,
+                    Code = "200",
+                    Message = "Product deleted successfully.",
+                    Data = default
+                };
+            }
+            catch (CustomException<GeneralMessageDTO> customEx)
+            {
+                Console.Error.WriteLine($"CustomException: {customEx.Response.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = customEx.Response.Success,
+                    Code = customEx.Response.Code,
+                    Message = customEx.Response.Message,
+                    Data = customEx.Response.Data == null ? default(T)! : (T)(object)customEx.Response.Data
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error deleting product: {ex.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = false,
+                    Code = "500",
+                    Message = "An error occurred while deleting the product.",
+                    Data = default
+                };
+            }
+        }
+
 
 
 

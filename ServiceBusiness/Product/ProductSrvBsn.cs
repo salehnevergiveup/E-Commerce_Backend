@@ -487,7 +487,7 @@ namespace PototoTrade.Service.Product
                     {
                         WalletId = adminWallet.Id,
                         Amount = -rebateAmount,
-                        TransactionType = "Rebate Cost",
+                        TransactionType = "Cost",
                         CreatedAt = DateTime.UtcNow
                     };
 

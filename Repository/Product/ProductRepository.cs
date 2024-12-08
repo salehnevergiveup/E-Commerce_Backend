@@ -20,6 +20,8 @@ public interface ProductRepository
 
     Task UpdateProduct(Products product) ;
 
+    Task DeleteProductAsync(Products product);
+
     Task<Products?> GetProductById(int productId);
 
 
