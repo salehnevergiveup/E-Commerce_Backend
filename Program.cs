@@ -33,6 +33,8 @@ using PototoTrade.Service.Product;
 using PototoTrade.Repository.BuyerItem;
 using PototoTrade.Service.BuyerItem;
 using PototoTrade.Repository.OnHoldingPayment;
+using PotatoTrade.Repository.Notification;
+using PotatoTrade.Service.Notification;
 
 
 
@@ -68,7 +70,6 @@ StripeConfiguration.ApiKey = stripeSettings.SecretKey;
 
 
 //Repos 
-
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
 builder.Services.AddScoped<SessionRepository, SessionRepositoryImp>();
 builder.Services.AddScoped<RoleRepository, RoleRepositoryImp>();
@@ -85,6 +86,8 @@ builder.Services.AddScoped<WalletTransactionRepository,WalletTransactionReposito
 builder.Services.AddScoped<PurchaseOrderRepository,PurchaseOrderRepositoryImpl>();
 builder.Services.AddScoped<BuyerItemRepository,BuyerItemRepositoryImpl>();
 builder.Services.AddScoped<OnHoldingPaymentHistoryRepository,OnHoldingPaymentHistoryRepositoryImpl>();
+builder.Services.AddScoped<NotificationRepository,NotificationRepositoryImpl>();
+
 
 
 //services & Business Service
@@ -103,6 +106,7 @@ builder.Services.AddScoped<ProductSrv>();
 builder.Services.AddScoped<ProductSrvBsn>();
 builder.Services.AddScoped<MediaSrv>();
 builder.Services.AddScoped<BuyerItemService>();
+builder.Services.AddScoped<NotificationService>();
 
 
 //MiddleWare Filters

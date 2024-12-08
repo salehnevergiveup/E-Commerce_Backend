@@ -37,6 +37,7 @@ public partial class DBC : DbContext
 
     public virtual DbSet<Notifications> Notifications { get; set; }
 
+    public virtual DbSet<UserNotification> UserNotification {get; set;}
     public virtual DbSet<Products> Products { get; set; }
 
     public virtual DbSet<ProductCategory> ProductCategories { get; set; }
@@ -261,9 +262,18 @@ public partial class DBC : DbContext
                 .ToTable("notification")
                 .UseCollation("utf8mb4_0900_ai_ci");
 
-            entity.HasIndex(e => e.UserId, "user_id");
+            entity.HasIndex(e => e.SenderId, "sender_id");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReceiverId)
+                .HasColumnType("int")
+                .HasColumnName("ReceiverId");
+             entity.Property(e => e.ReceiverUsername)
+                .HasColumnType("longtext")
+                .HasColumnName("ReceiverUsername");
+            entity.Property(e => e.Type)
+                .HasColumnType("text")
+                .HasColumnName("Type");
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasColumnName("created_at");
@@ -276,11 +286,61 @@ public partial class DBC : DbContext
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.SenderId).HasColumnName("sender_id");
+            entity.Property(e => e.SenderUsername)
+                .HasColumnType("longtext")
+                .HasColumnName("SenderUsername");
 
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
-                .HasForeignKey(d => d.UserId)
+                .HasForeignKey(d => d.SenderId)
                 .HasConstraintName("notification_ibfk_1");
+        });
+
+        modelBuilder.Entity<UserNotification>(entity =>
+        {
+            entity.HasKey(e => e.UserNotificationId).HasName("PRIMARY");
+
+            entity.ToTable("user_notification")
+                .UseCollation("utf8mb4_0900_ai_ci");
+
+            entity.Property(e => e.UserNotificationId)
+                .HasColumnName("id")
+                .IsRequired();
+
+            entity.Property(e => e.UserId)
+                .HasColumnName("user_id")
+                .IsRequired();
+
+            entity.Property(e => e.UserUsername)
+                .HasColumnType("longtext")
+                .HasColumnName("UserUsername");
+
+            entity.Property(e => e.NotificationId)
+                .HasColumnName("notification_id")
+                .IsRequired();
+
+            entity.Property(e => e.IsRead)
+                .HasColumnName("is_read")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.ReceivedAt)
+                .HasColumnName("received_at")
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnName("updated_at")
+                .IsRequired();
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.UserNotifications)
+                .HasForeignKey(e => e.UserId)
+                .HasConstraintName("user_notification_ibfk_1");
+
+            entity.HasOne(e => e.Notification)
+                .WithMany(n => n.UserNotifications)
+                .HasForeignKey(e => e.NotificationId)
+                .HasConstraintName("user_notification_ibfk_2");
         });
 
         modelBuilder.Entity<Products>(entity =>

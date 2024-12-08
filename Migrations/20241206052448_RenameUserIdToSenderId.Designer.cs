@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PototoTrade.Data;
 
@@ -11,9 +12,11 @@ using PototoTrade.Data;
 namespace PototoTrade.Migrations
 {
     [DbContext(typeof(DBC))]
-    partial class DBCModelSnapshot : ModelSnapshot
+    [Migration("20241206052448_RenameUserIdToSenderId")]
+    partial class RenameUserIdToSenderId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -305,17 +308,9 @@ namespace PototoTrade.Migrations
                         .HasColumnType("int")
                         .HasColumnName("ReceiverId");
 
-                    b.Property<string>("ReceiverUsername")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<int>("SenderId")
                         .HasColumnType("int")
                         .HasColumnName("sender_id");
-
-                    b.Property<string>("SenderUsername")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1134,10 +1129,6 @@ namespace PototoTrade.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int")
                         .HasColumnName("user_id");
-
-                    b.Property<string>("UserUsername")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.HasKey("UserNotificationId")
                         .HasName("PRIMARY");

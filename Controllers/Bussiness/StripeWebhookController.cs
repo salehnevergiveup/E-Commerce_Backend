@@ -87,7 +87,6 @@ namespace PototoTrade.Controllers
                             Console.WriteLine("Invalid payment amount received.");
                         }
                     }
-
                 }
                 else
                 {
@@ -110,8 +109,5 @@ namespace PototoTrade.Controllers
                 return StatusCode(500);
             }
         }
-
-
     }
-    
 }

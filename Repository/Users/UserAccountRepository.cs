@@ -2,6 +2,7 @@
 
 
 using PototoTrade.DTO.Auth;
+using PototoTrade.DTO.User;
 using PototoTrade.Models.User;
 
 namespace PototoTrade.Repository.Users;
@@ -27,6 +28,12 @@ public interface UserAccountRepository
     Task <bool> UpdateUserAccountsAsync(List<UserAccount> userAccounts);
 
     Task<UserAccount?> GetUserByPhoneNumber(string phoneNumber); 
+
+    Task<List<int>> GetUserIdsByRoleId(int roleId);
+
+    Task<List<UserIdUsernameDTO>> GetUserIdsAndUsernamesByRoleId(int roleId);
+
+    Task<string> GetUsernameByUserIdAsync(int userId);
 
 }
 

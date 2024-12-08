@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PototoTrade.Data;
 
@@ -11,9 +12,11 @@ using PototoTrade.Data;
 namespace PototoTrade.Migrations
 {
     [DbContext(typeof(DBC))]
-    partial class DBCModelSnapshot : ModelSnapshot
+    [Migration("20241205151349_UpdateUserNotificationTable")]
+    partial class UpdateUserNotificationTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -305,18 +308,6 @@ namespace PototoTrade.Migrations
                         .HasColumnType("int")
                         .HasColumnName("ReceiverId");
 
-                    b.Property<string>("ReceiverUsername")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("SenderId")
-                        .HasColumnType("int")
-                        .HasColumnName("sender_id");
-
-                    b.Property<string>("SenderUsername")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -334,10 +325,14 @@ namespace PototoTrade.Migrations
                         .HasColumnType("text")
                         .HasColumnName("Type");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
                     b.HasKey("Id")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "SenderId" }, "sender_id");
+                    b.HasIndex(new[] { "UserId" }, "user_id");
 
                     b.ToTable("notification", (string)null);
 
@@ -429,7 +424,8 @@ namespace PototoTrade.Migrations
                     b.HasIndex(new[] { "ProductId" }, "product_id")
                         .HasDatabaseName("product_id1");
 
-                    b.HasIndex(new[] { "UserId" }, "user_id");
+                    b.HasIndex(new[] { "UserId" }, "user_id")
+                        .HasDatabaseName("user_id1");
 
                     b.ToTable("product_review", (string)null);
 
@@ -497,7 +493,7 @@ namespace PototoTrade.Migrations
                     b.HasIndex(new[] { "CategoryId" }, "category_id");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id1");
+                        .HasDatabaseName("user_id2");
 
                     b.ToTable("products", (string)null);
 
@@ -542,7 +538,7 @@ namespace PototoTrade.Migrations
                     b.HasIndex(new[] { "CartId" }, "cart_id");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id2");
+                        .HasDatabaseName("user_id3");
 
                     b.ToTable("purchase_order", (string)null);
 
@@ -695,7 +691,7 @@ namespace PototoTrade.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
                         .IsUnique()
-                        .HasDatabaseName("user_id3");
+                        .HasDatabaseName("user_id4");
 
                     b.ToTable("shopping_cart", (string)null);
 
@@ -845,7 +841,7 @@ namespace PototoTrade.Migrations
                         .HasName("PRIMARY");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id4");
+                        .HasDatabaseName("user_id5");
 
                     b.ToTable("user_activities_log", (string)null);
 
@@ -904,7 +900,7 @@ namespace PototoTrade.Migrations
                         .IsUnique();
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id5");
+                        .HasDatabaseName("user_id6");
 
                     b.ToTable("user_details", (string)null);
 
@@ -1010,7 +1006,7 @@ namespace PototoTrade.Migrations
                         .HasName("PRIMARY");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id6");
+                        .HasDatabaseName("user_id7");
 
                     b.ToTable("user_session", (string)null);
 
@@ -1059,7 +1055,7 @@ namespace PototoTrade.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
                         .IsUnique()
-                        .HasDatabaseName("user_id7");
+                        .HasDatabaseName("user_id8");
 
                     b.ToTable("user_wallet", (string)null);
 
@@ -1124,8 +1120,10 @@ namespace PototoTrade.Migrations
                         .HasColumnName("notification_id");
 
                     b.Property<DateTime>("ReceivedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasColumnName("received_at");
+                        .HasColumnName("received_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)")
@@ -1134,10 +1132,6 @@ namespace PototoTrade.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int")
                         .HasColumnName("user_id");
-
-                    b.Property<string>("UserUsername")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.HasKey("UserNotificationId")
                         .HasName("PRIMARY");
@@ -1208,7 +1202,7 @@ namespace PototoTrade.Migrations
                 {
                     b.HasOne("PototoTrade.Models.User.UserAccount", "User")
                         .WithMany("Notifications")
-                        .HasForeignKey("SenderId")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("notification_ibfk_1");
