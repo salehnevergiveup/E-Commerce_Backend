@@ -43,7 +43,7 @@ namespace PototoTrade.Controllers.User
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UpdateUserDTO updateUserDto)
         {
-            return MakeResponse(await _userService.updateUser(id, updateUserDto, User));
+            return MakeResponse(await _userService.UpdateUser(id, updateUserDto, User));
         }
 
         [HttpGet("profile/{id}")]

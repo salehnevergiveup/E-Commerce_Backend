@@ -1,27 +1,23 @@
-using System.ComponentModel.DataAnnotations;
+// Models/CreateUserDTO.cs
 
-namespace PototoTrade.DTO.User;
+using PotatoTrade.DTO.MediaDTO;
 
-public record class CreateUserDTO
+public class CreateUserDTO 
 {
-    [Required]
     public int RoleId { get; set; }
-    [Required]
     public string UserName { get; set; }
-    public string UserCover { get; set; }
-    public string Avatar { get; set; }
-    [Required]
     public string Name { get; set; }
-    [RegularExpression("^[MF]$", ErrorMessage = "Gender must be 'M' or 'F'.")]
-    [Required]
+    
     public string Gender { get; set; }
+    
     public int Age { get; set; }
-    [EmailAddress(ErrorMessage = "Invalid Email Address")]
-    [Required]
+    
     public string Email { get; set; }
-    [Required]
+    
     public string Status { get; set; }
-    [Phone(ErrorMessage = "Invalid phone number.")]
     public string PhoneNumber { get; set; }
+    
     public string BillingAddress { get; set; }
+    
+    public List<HandleMedia> Medias { get; set; } // New property to handle media
 }
