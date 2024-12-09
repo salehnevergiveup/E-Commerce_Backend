@@ -24,7 +24,7 @@ using PototoTrade.ServiceBusiness.LLM;
 using PototoTrade.Repositories;
 using PototoTrade.Repository.Report;
 using PototoTrade.Service.Report;
-using PototoTrade.Service.Reivew;
+using PototoTrade.Service.Review;
 using PototoTrade.Repository.ReivewRepo;
 using PotatoTrade.Repository.ReviewRepo;
 using PototoTrade.Models;
@@ -103,7 +103,7 @@ builder.Services.AddScoped<ShoppingCartService>();
 builder.Services.AddScoped<LlamaIntegration>();
 builder.Services.AddScoped<LLMService>();  
 builder.Services.AddScoped<ReportsService>(); 
-builder.Services.AddScoped<ReviewService>(); 
+builder.Services.AddScoped<ProductReviewService>(); 
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor(); // for the websocket
 builder.Services.AddScoped<UserWalletService>();

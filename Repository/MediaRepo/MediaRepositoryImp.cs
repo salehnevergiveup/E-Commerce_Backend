@@ -62,13 +62,6 @@ public class MediaRepositoryImp : MediaRepository
         return true;
     }
 
-    public async Task<List<Media>> GetMediaListBySourceIdAndType(int sourceId, string sourceType)
-    {
-        return await _context.Media
-            .Where(m => m.SourceId == sourceId && m.SourceType == sourceType)
-            .ToListAsync();
-    }
-
     public async Task CreateMedia(Media media)
     {
         _context.Media.Add(media);

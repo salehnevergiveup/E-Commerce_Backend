@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PototoTrade.Controllers.CustomController;
 using PotatoTrade.DTO.Review;
-using PototoTrade.Service.Reivew;
+using PototoTrade.Service.Review;
 namespace PotatoTrade.Controllers.Review
 
 {
@@ -10,8 +10,8 @@ namespace PotatoTrade.Controllers.Review
     public class ReviewController : CustomBaseController
     {
 
-        private readonly ReviewService _reviewService;
-        public ReviewController(ReviewService reviewService)
+        private readonly ProductReviewService _reviewService;
+        public ReviewController(ProductReviewService reviewService)
         {
             _reviewService = reviewService;
         }

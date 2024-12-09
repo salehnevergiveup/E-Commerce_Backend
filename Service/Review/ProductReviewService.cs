@@ -7,7 +7,7 @@ using PototoTrade.Models.Media;
 using System.Security.Claims;
 using PotatoTrade.DTO.MediaDTO;
 
-namespace PototoTrade.Service.Reivew;
+namespace PototoTrade.Service.Review;
 
 public class ReviewService
 {

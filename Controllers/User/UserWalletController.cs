@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.Wallet;
 using PototoTrade.Service.Wallet;
 using System;
@@ -10,7 +10,7 @@ namespace PototoTrade.Controllers.User
 {
     [Route("api/wallet")]
     [ApiController]
-    public class UserWalletController : CustomerBaseController
+    public class UserWalletController : CustomBaseController
     {
         private readonly UserWalletService _userWalletService;
 

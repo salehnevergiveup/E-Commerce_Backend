@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.Common;
 using PototoTrade.DTO.Product;
 using PototoTrade.Service.Product;
@@ -10,7 +10,7 @@ namespace PototoTrade.Controllers.PurchaseOrder
     [Route("api/order")]
     [ApiController]
     [Authorize(Roles = "User,Admin, SuperAdmin")]
-    public class PurchaseOrderController : CustomerBaseController
+    public class PurchaseOrderController : CustomBaseController
     {
 
 
