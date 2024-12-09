@@ -175,17 +175,17 @@ public class ProductReviewService
 
         try
         {
-            // var userIdClaim = userClaims.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            // if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            // {
-            //     response.Message = "Invalid user.";
-            //     return response;
-            // }
+            var userIdClaim = userClaims.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                response.Message = "Invalid user.";
+                return response;
+            }
 
             var newReview = new ProductReview
             {
                 ProductId = createReviewDto.ProductId,
-                UserId = 50,
+                UserId = ,
                 Rating = createReviewDto.Rating,
                 ReviewComment = createReviewDto.ReviewComment,
                 ReviewDate = DateTime.UtcNow,

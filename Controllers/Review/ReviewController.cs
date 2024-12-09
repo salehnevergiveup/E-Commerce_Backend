@@ -5,7 +5,7 @@ using PototoTrade.Service.Review;
 namespace PotatoTrade.Controllers.Review
 
 {
-    [Route("api/[controller]")]
+    [Route("api/review")]
     [ApiController]
     public class ReviewController : CustomBaseController
     {
