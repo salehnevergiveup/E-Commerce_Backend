@@ -24,6 +24,37 @@ namespace PototoTrade.Migrations
             MySqlModelBuilderExtensions.HasCharSet(modelBuilder, "utf8mb4");
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("OnHoldingPaymentHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BuyerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BuyerItemId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("PaymentAmount")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SellerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OnHoldingPaymentHistories");
+                });
+
             modelBuilder.Entity("PototoTrade.Models.BuyerItem.BuyerItemDelivery", b =>
                 {
                     b.Property<int>("Id")
@@ -270,6 +301,22 @@ namespace PototoTrade.Migrations
                         .HasColumnType("text")
                         .HasColumnName("message_text");
 
+                    b.Property<int>("ReceiverId")
+                        .HasColumnType("int")
+                        .HasColumnName("ReceiverId");
+
+                    b.Property<string>("ReceiverUsername")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int")
+                        .HasColumnName("sender_id");
+
+                    b.Property<string>("SenderUsername")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -282,14 +329,15 @@ namespace PototoTrade.Migrations
                         .HasColumnType("varchar(255)")
                         .HasColumnName("title");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("user_id");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Type");
 
                     b.HasKey("Id")
                         .HasName("PRIMARY");
 
-                    b.HasIndex(new[] { "UserId" }, "user_id");
+                    b.HasIndex(new[] { "SenderId" }, "sender_id");
 
                     b.ToTable("notification", (string)null);
 
@@ -381,8 +429,7 @@ namespace PototoTrade.Migrations
                     b.HasIndex(new[] { "ProductId" }, "product_id")
                         .HasDatabaseName("product_id1");
 
-                    b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id1");
+                    b.HasIndex(new[] { "UserId" }, "user_id");
 
                     b.ToTable("product_review", (string)null);
 
@@ -450,7 +497,7 @@ namespace PototoTrade.Migrations
                     b.HasIndex(new[] { "CategoryId" }, "category_id");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id2");
+                        .HasDatabaseName("user_id1");
 
                     b.ToTable("products", (string)null);
 
@@ -495,14 +542,14 @@ namespace PototoTrade.Migrations
                     b.HasIndex(new[] { "CartId" }, "cart_id");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id3");
+                        .HasDatabaseName("user_id2");
 
                     b.ToTable("purchase_order", (string)null);
 
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
                 });
 
-            modelBuilder.Entity("PototoTrade.Models.Role.Role.AdminPermission", b =>
+            modelBuilder.Entity("PototoTrade.Models.Role.AdminPermission", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -648,9 +695,59 @@ namespace PototoTrade.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
                         .IsUnique()
-                        .HasDatabaseName("user_id4");
+                        .HasDatabaseName("user_id3");
 
                     b.ToTable("shopping_cart", (string)null);
+
+                    MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
+                });
+
+            modelBuilder.Entity("PototoTrade.Models.User.RefundRequest", b =>
+                {
+                    b.Property<int>("RefundRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("RefundRequestId");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("RefundRequestId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Amount");
+
+                    b.Property<int>("BuyerId")
+                        .HasColumnType("int")
+                        .HasColumnName("BuyerId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("SellerId")
+                        .HasColumnType("int")
+                        .HasColumnName("SellerId");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("Status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    b.HasKey("RefundRequestId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("BuyerId");
+
+                    b.HasIndex("SellerId");
+
+                    b.ToTable("refund_requests", (string)null);
 
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
                 });
@@ -748,7 +845,7 @@ namespace PototoTrade.Migrations
                         .HasName("PRIMARY");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id5");
+                        .HasDatabaseName("user_id4");
 
                     b.ToTable("user_activities_log", (string)null);
 
@@ -807,7 +904,7 @@ namespace PototoTrade.Migrations
                         .IsUnique();
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id6");
+                        .HasDatabaseName("user_id5");
 
                     b.ToTable("user_details", (string)null);
 
@@ -913,7 +1010,7 @@ namespace PototoTrade.Migrations
                         .HasName("PRIMARY");
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
-                        .HasDatabaseName("user_id7");
+                        .HasDatabaseName("user_id6");
 
                     b.ToTable("user_session", (string)null);
 
@@ -962,7 +1059,7 @@ namespace PototoTrade.Migrations
 
                     b.HasIndex(new[] { "UserId" }, "user_id")
                         .IsUnique()
-                        .HasDatabaseName("user_id8");
+                        .HasDatabaseName("user_id7");
 
                     b.ToTable("user_wallet", (string)null);
 
@@ -1003,6 +1100,53 @@ namespace PototoTrade.Migrations
                     b.HasIndex(new[] { "WalletId" }, "wallet_id");
 
                     b.ToTable("wallet_transaction", (string)null);
+
+                    MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
+                });
+
+            modelBuilder.Entity("UserNotification", b =>
+                {
+                    b.Property<int>("UserNotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UserNotificationId"));
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_read");
+
+                    b.Property<int>("NotificationId")
+                        .HasColumnType("int")
+                        .HasColumnName("notification_id");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("received_at");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserUsername")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("UserNotificationId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("NotificationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("user_notification", (string)null);
 
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
                 });
@@ -1064,7 +1208,7 @@ namespace PototoTrade.Migrations
                 {
                     b.HasOne("PototoTrade.Models.User.UserAccount", "User")
                         .WithMany("Notifications")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("notification_ibfk_1");
@@ -1134,7 +1278,7 @@ namespace PototoTrade.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PototoTrade.Models.Role.Role.AdminPermission", b =>
+            modelBuilder.Entity("PototoTrade.Models.Role.AdminPermission", b =>
                 {
                     b.HasOne("PototoTrade.Models.Role.Roles", "Role")
                         .WithMany("AdminPermissions")
@@ -1176,6 +1320,23 @@ namespace PototoTrade.Migrations
                         .HasConstraintName("shopping_cart_ibfk_1");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PototoTrade.Models.User.RefundRequest", b =>
+                {
+                    b.HasOne("PototoTrade.Models.User.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("refund_requests_ibfk_1");
+
+                    b.HasOne("PototoTrade.Models.User.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("refund_requests_ibfk_2");
                 });
 
             modelBuilder.Entity("PototoTrade.Models.User.UserAccount", b =>
@@ -1270,6 +1431,27 @@ namespace PototoTrade.Migrations
                     b.Navigation("Wallet");
                 });
 
+            modelBuilder.Entity("UserNotification", b =>
+                {
+                    b.HasOne("PototoTrade.Models.Notification.Notifications", "Notification")
+                        .WithMany("UserNotifications")
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("user_notification_ibfk_2");
+
+                    b.HasOne("PototoTrade.Models.User.UserAccount", "User")
+                        .WithMany("UserNotifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("user_notification_ibfk_1");
+
+                    b.Navigation("Notification");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PototoTrade.Models.BuyerItem.BuyerItems", b =>
                 {
                     b.Navigation("BuyerItemDeliveries");
@@ -1278,6 +1460,11 @@ namespace PototoTrade.Migrations
             modelBuilder.Entity("PototoTrade.Models.Content.Contents", b =>
                 {
                     b.Navigation("ContentDetails");
+                });
+
+            modelBuilder.Entity("PototoTrade.Models.Notification.Notifications", b =>
+                {
+                    b.Navigation("UserNotifications");
                 });
 
             modelBuilder.Entity("PototoTrade.Models.Product.ProductCategory", b =>
@@ -1330,6 +1517,8 @@ namespace PototoTrade.Migrations
                     b.Navigation("UserActivitiesLogs");
 
                     b.Navigation("UserDetails");
+
+                    b.Navigation("UserNotifications");
 
                     b.Navigation("UserReportReportedUsers");
 

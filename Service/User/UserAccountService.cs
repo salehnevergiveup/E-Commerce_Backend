@@ -611,6 +611,64 @@ namespace PototoTrade.Service.User
             }
         }
 
+        public async Task<ResponseModel<List<int>>> GetUserIdsByRoleId(int roleId)
+        {
+            var response = new ResponseModel<List<int>>
+            {
+                Success = false,
+                Data = new List<int>(),
+                Message = "Failed to retrieve user IDs."
+            };
+            try
+            {
+                var userIds = await _userAccountRepository.GetUserIdsByRoleId(roleId);
+
+                if (userIds == null || !userIds.Any())
+                {
+                    response.Message = "No users found with the specified role.";
+                    return response;
+                }
+
+                response.Data = userIds;
+                response.Success = true;
+                response.Message = "User IDs retrieved successfully.";
+                return response;
+            }
+            catch (Exception e)
+            {
+                response.Message = "Something went wrong. Unable to fetch user IDs.";
+                response.Success = false;
+                return response;
+            }
+        }
+
+        // public async Task<ResponseModel<List<string>>> GetUserNamesByUserIds(List<int> userIds)
+        // {
+        //     var response = new ResponseModel<List<int>>
+        //     {
+        //         Success = false,
+        //         Data = new List<int>(),
+        //         Message = "Failed to retrieve usernames."
+        //     };
+        //     try
+        //     {
+        //        //logic
+
+        //         response.Data = userIds;
+        //         response.Success = true;
+        //         response.Message = "Usernames retrieved successfully.";
+        //         return response;
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         response.Message = "Something went wrong. Unable to fetch Usernames.";
+        //         response.Success = false;
+        //         return response;
+        //     }
+
+        // }
+
     }
+    
 
 }

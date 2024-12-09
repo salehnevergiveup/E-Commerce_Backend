@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PototoTrade.Data;
 using PototoTrade.DTO.Auth;
+using PototoTrade.DTO.User;
 using PototoTrade.Enums;
 using PototoTrade.Models.User;
 using PototoTrade.Repository.Users;
@@ -109,6 +110,47 @@ namespace PototoTrade.Repository.User
             }
 
         }
+
+        public async Task<List<int>> GetUserIdsByRoleId(int roleId)
+        {
+            return await _context.UserAccounts
+                .Where(u => u.RoleId == roleId) // Filter users by role_id
+                .Select(u => u.Id)               // Select only the Id
+                .ToListAsync();
+        }
+
+        public async Task<List<UserIdUsernameDTO>> GetUserIdsAndUsernamesByRoleId(int roleId)
+        {
+            return await _context.UserAccounts
+                .Where(u => u.RoleId == roleId) // Filter users by role_id
+                .Select(u => new UserIdUsernameDTO // Create a DTO for UserId and Username
+                {
+                    UserId = u.Id,
+                    Username = u.Username
+                })
+                .ToListAsync();
+        }
+
+
+        public async Task<string> GetUsernameByUserIdAsync(int userId)
+        {
+            try
+            {
+                // Fetch the username based on the given user ID from the user_accounts table
+                var username = await (from user in _context.UserAccounts
+                                    where user.Id == userId
+                                    select user.Username).FirstOrDefaultAsync();
+
+                return username;
+            }
+            catch (Exception e)
+            {
+                // Log the exception if required
+                return null;
+            }
+        }
+
+
 
     }
 }

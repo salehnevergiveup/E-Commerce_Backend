@@ -11,5 +11,7 @@ public interface ShoppingCartRepository
 
     Task<bool> DeleteShoppingCart(ShoppingCarts shoppingCart); 
 
+    Task DeleteShoppingCartItems(List<ShoppingCartItem> items);
+
     Task<List<ShoppingCarts>> GetShoppingCarts(); 
 }

@@ -37,6 +37,7 @@ public partial class DBC : DbContext
 
     public virtual DbSet<Notifications> Notifications { get; set; }
 
+    public virtual DbSet<UserNotification> UserNotification {get; set;}
     public virtual DbSet<Products> Products { get; set; }
 
     public virtual DbSet<ProductCategory> ProductCategories { get; set; }
@@ -62,8 +63,11 @@ public partial class DBC : DbContext
     public virtual DbSet<UserSession> UserSessions { get; set; }
 
     public virtual DbSet<UserWallet> UserWallets { get; set; }
+    public virtual DbSet<RefundRequest> RefundRequests { get; set; }
 
     public virtual DbSet<WalletTransaction> WalletTransactions { get; set; }
+
+    public virtual DbSet<OnHoldingPaymentHistory> OnHoldingPaymentHistories { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseMySql("server=localhost;database=e_commerce_second_hand;user=root;password=abc123", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.37-mysql"));
@@ -258,9 +262,18 @@ public partial class DBC : DbContext
                 .ToTable("notification")
                 .UseCollation("utf8mb4_0900_ai_ci");
 
-            entity.HasIndex(e => e.UserId, "user_id");
+            entity.HasIndex(e => e.SenderId, "sender_id");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReceiverId)
+                .HasColumnType("int")
+                .HasColumnName("ReceiverId");
+             entity.Property(e => e.ReceiverUsername)
+                .HasColumnType("longtext")
+                .HasColumnName("ReceiverUsername");
+            entity.Property(e => e.Type)
+                .HasColumnType("text")
+                .HasColumnName("Type");
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasColumnName("created_at");
@@ -273,11 +286,61 @@ public partial class DBC : DbContext
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.SenderId).HasColumnName("sender_id");
+            entity.Property(e => e.SenderUsername)
+                .HasColumnType("longtext")
+                .HasColumnName("SenderUsername");
 
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
-                .HasForeignKey(d => d.UserId)
+                .HasForeignKey(d => d.SenderId)
                 .HasConstraintName("notification_ibfk_1");
+        });
+
+        modelBuilder.Entity<UserNotification>(entity =>
+        {
+            entity.HasKey(e => e.UserNotificationId).HasName("PRIMARY");
+
+            entity.ToTable("user_notification")
+                .UseCollation("utf8mb4_0900_ai_ci");
+
+            entity.Property(e => e.UserNotificationId)
+                .HasColumnName("id")
+                .IsRequired();
+
+            entity.Property(e => e.UserId)
+                .HasColumnName("user_id")
+                .IsRequired();
+
+            entity.Property(e => e.UserUsername)
+                .HasColumnType("longtext")
+                .HasColumnName("UserUsername");
+
+            entity.Property(e => e.NotificationId)
+                .HasColumnName("notification_id")
+                .IsRequired();
+
+            entity.Property(e => e.IsRead)
+                .HasColumnName("is_read")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.ReceivedAt)
+                .HasColumnName("received_at")
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnName("updated_at")
+                .IsRequired();
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.UserNotifications)
+                .HasForeignKey(e => e.UserId)
+                .HasConstraintName("user_notification_ibfk_1");
+
+            entity.HasOne(e => e.Notification)
+                .WithMany(n => n.UserNotifications)
+                .HasForeignKey(e => e.NotificationId)
+                .HasConstraintName("user_notification_ibfk_2");
         });
 
         modelBuilder.Entity<Products>(entity =>
@@ -711,6 +774,58 @@ public partial class DBC : DbContext
                 .HasForeignKey<UserWallet>(d => d.UserId)
                 .HasConstraintName("user_wallet_ibfk_1");
         });
+
+        modelBuilder.Entity<RefundRequest>(entity =>
+        {
+            entity.HasKey(e => e.RefundRequestId).HasName("PRIMARY");
+
+            entity.ToTable("refund_requests")
+                .UseCollation("utf8mb4_0900_ai_ci");
+
+            entity.Property(e => e.RefundRequestId)
+                .HasColumnName("RefundRequestId")
+                .IsRequired();
+
+            entity.Property(e => e.BuyerId)
+                .HasColumnName("BuyerId")
+                .IsRequired();
+
+            entity.Property(e => e.SellerId)
+                .HasColumnName("SellerId")
+                .IsRequired();
+
+            entity.Property(e => e.Amount)
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("Amount")
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .HasColumnType("varchar(50)")
+                .HasColumnName("Status")
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("CreatedAt");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+                .HasColumnName("UpdatedAt");
+
+            // Foreign key constraints (optional but recommended for clarity)
+            entity.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(e => e.BuyerId)
+                .HasConstraintName("refund_requests_ibfk_1");
+
+            entity.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(e => e.SellerId)
+                .HasConstraintName("refund_requests_ibfk_2");
+        });
+
 
         modelBuilder.Entity<WalletTransaction>(entity =>
         {

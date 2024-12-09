@@ -86,10 +86,11 @@ public class SystemInti : Seeder
         if (this._dataContext.UserAccounts.FirstOrDefault(u => u.Username == "SuperAdmin") == null)
         {
             Roles adminRole = this._dataContext.Roles.FirstOrDefault(r => r.RoleType == UserRolesEnum.SuperAdmin.ToString());
+            Roles userRole = this._dataContext.Roles.FirstOrDefault(r => r.RoleType == UserRolesEnum.User.ToString());
 
-            if (adminRole == null)
+            if (adminRole == null || userRole == null)
             {
-                throw new Exception("SuperAdmin role is missing.");
+                throw new Exception("SuperAdmin or User role is missing.");
             }
 
 
@@ -103,7 +104,18 @@ public class SystemInti : Seeder
                 CreatedAt = DateTime.UtcNow,
             };
 
+            UserAccount user = new UserAccount
+            {
+                Name = "ELTON",
+                Username = "User",
+                PasswordHash = this._hash.Hash("password"),
+                RoleId = userRole.Id,
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow,
+            };
+
             this._dataContext.UserAccounts.Add(superAdmin);
+            this._dataContext.UserAccounts.Add(user);
             this._dataContext.SaveChanges();
 
             UserDetail superAdminDetails = new UserDetail
@@ -117,7 +129,19 @@ public class SystemInti : Seeder
                 CreatedAt = DateTime.Now,
             };
 
+            UserDetail userDetails = new UserDetail
+            {
+                UserId = user.Id,
+                PhoneNumber = "601121615114",
+                Gender = "M",
+                Email = "elton@gamil.com",
+                Age = 22,
+                BillingAddress = "",
+                CreatedAt = DateTime.Now,
+            };
+
             this._dataContext.UserDetails.Add(superAdminDetails);
+            this._dataContext.UserDetails.Add(userDetails);
             this._dataContext.SaveChanges();
         }
 
@@ -126,7 +150,7 @@ public class SystemInti : Seeder
 
     public override void seed()
     {
-        this.SeedRoles().SeedSuperAdmin();
+        this.SeedSuperAdmin();
 
     }
 }
