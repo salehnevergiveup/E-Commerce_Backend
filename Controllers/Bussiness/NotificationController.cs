@@ -45,8 +45,13 @@ namespace PotatoTrade.Controllers.Bussiness{
             //     message = responseObject.Message, 
             //     data = responseObject.Data 
             // });    
-
         }
+        // [HttpGet("users/update_notifications")]
+        // [Authorize(Roles = "User")]
+        // public async Task<IActionResult> MarkAllNotificationsAsRead()
+        // {
+            
+        // }
 
     }
 
