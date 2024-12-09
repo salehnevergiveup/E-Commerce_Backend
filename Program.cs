@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PototoTrade.Middleware.Filter;
 using PototoTrade.Service.User;
+//using PototoTrade.ServiceBusiness.LiveChat;
 using PototoTrade.Repository.User;
 using PototoTrade.Repository.Users;
 using PototoTrade.Data;
@@ -23,6 +24,17 @@ using PototoTrade.ServiceBusiness.LLM;
 using PototoTrade.Repositories;
 using PototoTrade.Repository.Report;
 using PototoTrade.Service.Report;
+using PototoTrade.Models;
+using Stripe;
+using PototoTrade.Repository.Wallet;
+using PototoTrade.Service.Wallet;
+using Org.BouncyCastle.Math.EC.Rfc8032;
+using PototoTrade.Service.Product;
+using PototoTrade.Repository.BuyerItem;
+using PototoTrade.Service.BuyerItem;
+using PototoTrade.Repository.OnHoldingPayment;
+using PotatoTrade.Repository.Notification;
+using PotatoTrade.Service.Notification;
 
 
 
@@ -39,15 +51,23 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.WithOrigins("http://localhost:3000")
+        builder.WithOrigins("http://localhost:3000","https://js.stripe.com",
+            "https://checkout.stripe.com")
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials(); // Allow cookies to be sent
     });
 });
 
+builder.Services.AddSingleton<SharedDb>(); //connection to db
+builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+var stripeSettings = builder.Configuration.GetSection("Stripe").Get<StripeSettings>();
+StripeConfiguration.ApiKey = stripeSettings.SecretKey;
+
+
 
 //Repos 
 builder.Services.AddScoped<UserAccountRepository, UserAccountRepositoryImpl>();
@@ -57,10 +77,18 @@ builder.Services.AddScoped<MediaRepository, MediaRepositoryImp>();
 builder.Services.AddScoped<UserDetailsRepository, UserDetailsRepositoryImp>();
 builder.Services.AddScoped<ShoppingCartItemRepository, ShoppingCartItemRepositoryImp>();
 builder.Services.AddScoped<ShoppingCartRepository, ShoppingCartRrepositoryImp>();
-builder.Services.AddScoped<ProductRepository, ProductRepositoryImp>();
+builder.Services.AddScoped<ProductRepository, ProductRepositoryImpl>();
 builder.Services.AddScoped<ReportRepository,ReportRepositoryImp>(); 
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
+builder.Services.AddScoped<WalletRepository,WalletRepositoryImp>();
+builder.Services.AddScoped<WalletTransactionRepository,WalletTransactionRepositoryImpl>();
+builder.Services.AddScoped<PurchaseOrderRepository,PurchaseOrderRepositoryImpl>();
+builder.Services.AddScoped<BuyerItemRepository,BuyerItemRepositoryImpl>();
+builder.Services.AddScoped<OnHoldingPaymentHistoryRepository,OnHoldingPaymentHistoryRepositoryImpl>();
+builder.Services.AddScoped<NotificationRepository,NotificationRepositoryImpl>();
+
+
 
 //services & Business Service
 builder.Services.AddScoped<Authentication>();
@@ -73,6 +101,12 @@ builder.Services.AddScoped<LLMService>();
 builder.Services.AddScoped<ReportsService>(); 
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor(); // for the websocket
+builder.Services.AddScoped<UserWalletService>();
+builder.Services.AddScoped<ProductSrv>();
+builder.Services.AddScoped<ProductSrvBsn>();
+builder.Services.AddScoped<MediaSrv>();
+builder.Services.AddScoped<BuyerItemService>();
+builder.Services.AddScoped<NotificationService>();
 
 
 //MiddleWare Filters
@@ -127,7 +161,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 
-
 var app = builder.Build();
 
 //swagger configruation for the dev env
@@ -143,6 +176,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.UseMiddleware<FilterMiddleware>();
+
+//app.MapHub<ChatHub>("/Chat"); //connection to chat hub
+
+
+
+//TODO: figure out how to use chat with middleware
+//TODO: once user click on 'chat now' cehck if user is authenticated, if !authenticated throw user to regiser/login page, if authenticated, extract user info.
+
 app.UseCookiePolicy(new CookiePolicyOptions
 {
     MinimumSameSitePolicy = SameSiteMode.None,
@@ -154,6 +195,7 @@ app.MapHub<ChatHub>("/chatHub");// this  will be add when you create the live ch
 app.MapHub<NotificationHub>("/notificationHub"); //this is will be added when you create the notification  hub 
 
 //seeder for init data
+//dotnet run -- init
 if (args.Length == 1 && args[0].ToLower() == "init")
     SeedData(app);
 

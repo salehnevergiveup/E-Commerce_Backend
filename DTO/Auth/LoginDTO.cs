@@ -14,3 +14,5 @@ public class LoginDTO
     public bool RememberMe { get; set; }
 
 }
+
+//todo: add dto for userwallet, modify controller so that api functions uses dto and not optional query

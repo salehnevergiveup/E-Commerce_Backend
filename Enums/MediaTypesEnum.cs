@@ -5,5 +5,5 @@ public enum MediaTypesEnum
     UserProfile,
     UserCover,
     ProductImage,
-
+    SystemAnnoucement,
 }

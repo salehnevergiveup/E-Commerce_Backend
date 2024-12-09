@@ -12,8 +12,8 @@ using PototoTrade.Data;
 namespace PototoTrade.Migrations
 {
     [DbContext(typeof(DBC))]
-    [Migration("20241027063631_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20241201193509_AddOnHoldingPaymentHistory")]
+    partial class AddOnHoldingPaymentHistory
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,6 +26,37 @@ namespace PototoTrade.Migrations
 
             MySqlModelBuilderExtensions.HasCharSet(modelBuilder, "utf8mb4");
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
+            modelBuilder.Entity("OnHoldingPaymentHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BuyerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BuyerItemId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("PaymentAmount")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SellerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OnHoldingPaymentHistories");
+                });
 
             modelBuilder.Entity("PototoTrade.Models.BuyerItem.BuyerItemDelivery", b =>
                 {
@@ -505,7 +536,7 @@ namespace PototoTrade.Migrations
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
                 });
 
-            modelBuilder.Entity("PototoTrade.Models.Role.Role.AdminPermission", b =>
+            modelBuilder.Entity("PototoTrade.Models.Role.AdminPermission", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -654,6 +685,56 @@ namespace PototoTrade.Migrations
                         .HasDatabaseName("user_id4");
 
                     b.ToTable("shopping_cart", (string)null);
+
+                    MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
+                });
+
+            modelBuilder.Entity("PototoTrade.Models.User.RefundRequest", b =>
+                {
+                    b.Property<int>("RefundRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("RefundRequestId");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("RefundRequestId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Amount");
+
+                    b.Property<int>("BuyerId")
+                        .HasColumnType("int")
+                        .HasColumnName("BuyerId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("SellerId")
+                        .HasColumnType("int")
+                        .HasColumnName("SellerId");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("Status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+                    b.HasKey("RefundRequestId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("BuyerId");
+
+                    b.HasIndex("SellerId");
+
+                    b.ToTable("refund_requests", (string)null);
 
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_0900_ai_ci");
                 });
@@ -1137,7 +1218,7 @@ namespace PototoTrade.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PototoTrade.Models.Role.Role.AdminPermission", b =>
+            modelBuilder.Entity("PototoTrade.Models.Role.AdminPermission", b =>
                 {
                     b.HasOne("PototoTrade.Models.Role.Roles", "Role")
                         .WithMany("AdminPermissions")
@@ -1179,6 +1260,23 @@ namespace PototoTrade.Migrations
                         .HasConstraintName("shopping_cart_ibfk_1");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PototoTrade.Models.User.RefundRequest", b =>
+                {
+                    b.HasOne("PototoTrade.Models.User.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("refund_requests_ibfk_1");
+
+                    b.HasOne("PototoTrade.Models.User.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("SellerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("refund_requests_ibfk_2");
                 });
 
             modelBuilder.Entity("PototoTrade.Models.User.UserAccount", b =>

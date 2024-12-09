@@ -15,6 +15,7 @@ namespace PototoTrade.Controllers.User
         {
             _userService = userAccountService;
         }
+        //use userclaims instead of user id
 
         [HttpGet]
         public async Task<IActionResult> GetUserList()

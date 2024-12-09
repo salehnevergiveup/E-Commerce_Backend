@@ -89,4 +89,10 @@ public class ShoppingCartRrepositoryImp : ShoppingCartRepository
         }
     }
 
+    public async Task DeleteShoppingCartItems(List<ShoppingCartItem> items)
+    {
+        _context.ShoppingCartItems.RemoveRange(items);
+        await _context.SaveChangesAsync();
+    }
+
 }

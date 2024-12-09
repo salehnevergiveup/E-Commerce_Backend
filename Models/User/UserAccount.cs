@@ -51,4 +51,6 @@ public partial class UserAccount
     public virtual ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
 
     public virtual UserWallet? UserWallet { get; set; }
+
+    public virtual ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
 }
