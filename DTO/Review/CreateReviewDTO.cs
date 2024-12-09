@@ -1,3 +1,5 @@
+using PotatoTrade.DTO.MediaDTO;
+
 namespace PotatoTrade.DTO.Review
 {
     public class CreateReviewDTO
@@ -5,6 +7,7 @@ namespace PotatoTrade.DTO.Review
         public int ProductId { get; set; }
         public int Rating { get; set; }
         public string? ReviewComment { get; set; }
-        public string? MediaUrl { get; set; }
+        public List<HandleMedia> Medias { get; set; } = new List<HandleMedia>(); 
+
     }
 }

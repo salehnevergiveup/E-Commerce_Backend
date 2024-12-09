@@ -6,9 +6,10 @@ namespace PotatoTrade.DTO.MediaDTO
 {
     public class HandleMedia
     {
-        public int ?Id { get; set; } // Unique identifier for the media
+        public int ?Id { get; set; } 
+        public int ?SourceId {get; set;} =  0;  
         public string? Type { get; set; } 
-        public string MediaUrl { get; set; } // URL to the media
+        public string MediaUrl { get; set; } 
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

@@ -5,7 +5,7 @@ using PototoTrade.Service.Reivew;
 namespace PotatoTrade.Controllers.Review
 
 {
-    [Route("api/[controller]/public")]
+    [Route("api/[controller]")]
     [ApiController]
     public class ReviewController : CustomBaseController
     {
@@ -31,16 +31,9 @@ namespace PotatoTrade.Controllers.Review
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReview([FromBody] CreateReviewDTO createReviewDto)
+        public async Task<IActionResult> CreateReview(CreateReviewDTO createReviewDto)
         {
             var response = await _reviewService.CreateReview(createReviewDto, User);
-            return MakeResponse(response);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateReview(int id, [FromBody] UpdateReviewDTO updateReviewDto)
-        {
-            var response = await _reviewService.UpdateReview(id, updateReviewDto, User);
             return MakeResponse(response);
         }
 

@@ -1,3 +1,5 @@
+using PotatoTrade.DTO.MediaDTO;
+
 namespace PotatoTrade.DTO.Review
 {
     public class ReviewDTO
@@ -10,6 +12,7 @@ namespace PotatoTrade.DTO.Review
         public string? ReviewComment { get; set; }
         public DateTime ReviewDate { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public string? MediaUrl { get; set; }
+
+    public List<HandleMedia> Medias { get; set; } = new List<HandleMedia>(); // New Medias Array
     }
 }

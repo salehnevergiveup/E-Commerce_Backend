@@ -374,7 +374,6 @@ namespace PototoTrade.Service.User
             }
         }
 
-
         public async Task<ResponseModel<bool>> UpdateUser(int id, UpdateUserDTO userInfo, ClaimsPrincipal userClaims)
         {
             var response = new ResponseModel<bool> { Success = false, Data = false };

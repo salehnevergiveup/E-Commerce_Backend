@@ -5,6 +5,7 @@ using PototoTrade.Service.Utilities.Response;
 using PototoTrade.Models.Product;
 using PototoTrade.Models.Media;
 using System.Security.Claims;
+using PotatoTrade.DTO.MediaDTO;
 
 namespace PototoTrade.Service.Reivew;
 
@@ -42,14 +43,28 @@ public class ReviewService
 
             foreach (var review in reviews)
             {
-                Media? media = null;
+                var medias = await _media.GetMediaListBySourceIdAndType(review.Id, "Review");
 
-                if (review.MediaBoolean)
+                var reviewDTO = new ReviewDTO
                 {
-                    media = await _media.GetMediaBySourceIdAndType(review.Id, "Review");
-                }
+                    Id = review.Id,
+                    ProductId = review.ProductId,
+                    UserId = review.UserId,
+                    Rating = review.Rating,
+                    ReviewComment = review.ReviewComment,
+                    ReviewDate = review.ReviewDate,
+                    UpdatedAt = review.UpdatedAt,
+                    Medias = medias.Select(media => new HandleMedia
+                    {
+                        Id = media.Id,
+                        SourceId = media.SourceId,
+                        Type = media.SourceType,
+                        MediaUrl = media.MediaUrl,
+                        CreatedAt = media.CreatedAt,
+                        UpdatedAt = media.UpdatedAt
+                    }).ToList()
+                };
 
-                var reviewDTO = this.castToReviewDTO(review, media);
                 reviewDTOs.Add(reviewDTO);
             }
 
@@ -63,23 +78,9 @@ public class ReviewService
             response.Message = "An error occurred while retrieving reviews.";
             return response;
         }
+
     }
 
-    private ReviewDTO castToReviewDTO(ProductReview review, Media media)
-    {
-        return new ReviewDTO
-        {
-            Id = review.Id,
-            ProductId = review.ProductId,
-            UserId = review.UserId,
-            Rating = review.Rating,
-            ReviewComment = review.ReviewComment,
-            ReviewDate = review.ReviewDate,
-            UpdatedAt = review.UpdatedAt,
-            MediaBoolean = review.MediaBoolean,
-            MediaUrl = media?.MediaUrl,
-        };
-    }
     public async Task<ResponseModel<List<ReviewDTO>>> GetReviews(int id, string type)
     {
         var response = new ResponseModel<List<ReviewDTO>> { Success = false };
@@ -116,19 +117,42 @@ public class ReviewService
 
             var reviewDTOs = new List<ReviewDTO>();
 
-            foreach (var review in reviews)
+            // Create a list of tasks to fetch media for each review
+            var mediaTasks = reviews.Select(review => _media.GetMediaListBySourceIdAndType(review.Id, "Review")).ToList();
+
+            // Execute all media fetching tasks concurrently
+            var allMedias = await Task.WhenAll(mediaTasks);
+
+            // Iterate through each review and map to ReviewDTO
+            for (int i = 0; i < reviews.Count; i++)
             {
-                Media? media = null;
+                var review = reviews[i];
+                var medias = allMedias[i];
 
-                if (review.MediaBoolean)
+                var reviewDTO = new ReviewDTO
                 {
-                    media = await _media.GetMediaBySourceIdAndType(review.Id, "Review");
-                }
+                    Id = review.Id,
+                    ProductId = review.ProductId,
+                    UserId = review.UserId,
+                    Rating = review.Rating,
+                    ReviewComment = review.ReviewComment,
+                    ReviewDate = review.ReviewDate,
+                    UpdatedAt = review.UpdatedAt,
+                    Medias = medias.Select(media => new HandleMedia
+                    {
+                        Id = media.Id,
+                        SourceId = media.SourceId,
+                        Type = media.SourceType,
+                        MediaUrl = media.MediaUrl,
+                        CreatedAt = media.CreatedAt,
+                        UpdatedAt = media.UpdatedAt
+                    }).ToList()
+                };
 
-                var reviewDTO = this.castToReviewDTO(review, media);
                 reviewDTOs.Add(reviewDTO);
             }
 
+            // Populate the response
             response.Data = reviewDTOs;
             response.Success = true;
             response.Message = "Reviews retrieved successfully.";
@@ -136,48 +160,60 @@ public class ReviewService
         }
         catch (Exception ex)
         {
+            // Optionally log the exception here using your logging framework
+            // _logger.LogError(ex, "Error retrieving reviews.");
+
             response.Message = "An error occurred while retrieving reviews.";
             return response;
         }
     }
 
+
     public async Task<ResponseModel<int>> CreateReview(CreateReviewDTO createReviewDto, ClaimsPrincipal userClaims)
     {
         var response = new ResponseModel<int> { Success = false };
+
         try
         {
-            var userIdClaim = userClaims.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
-                response.Message = "Invalid user.";
-                return response;
-            }
+            // var userIdClaim = userClaims.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            // {
+            //     response.Message = "Invalid user.";
+            //     return response;
+            // }
 
             var newReview = new ProductReview
             {
                 ProductId = createReviewDto.ProductId,
-                UserId = 23,
+                UserId = 50,
                 Rating = createReviewDto.Rating,
                 ReviewComment = createReviewDto.ReviewComment,
                 ReviewDate = DateTime.UtcNow,
-                MediaBoolean = !string.IsNullOrEmpty(createReviewDto.MediaUrl)
+                UpdatedAt = DateTime.UtcNow
             };
 
-            await _review.CreateReview(newReview);
-
-            if (!string.IsNullOrEmpty(createReviewDto.MediaUrl))
+            var createdReview = await _review.CreateReview(newReview);
+            if (createdReview == null)
             {
-                var newMedia = new Media
-                {
-                    SourceType = "Review",
-                    SourceId = newReview.Id,
-                    MediaUrl = createReviewDto.MediaUrl,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _media.CreateMedias(newReview.Id, new List<Media> { newMedia });
+                response.Message = "Failed to create review.";
+                return response;
             }
 
-            response.Data = newReview.Id;
+            if (createReviewDto.Medias != null && createReviewDto.Medias.Any())
+            {
+                var medias = createReviewDto.Medias.Select(mediaDto => new Media
+                {
+                    SourceType = "Review",
+                    SourceId = createdReview.Id,
+                    MediaUrl = mediaDto.MediaUrl,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }).ToList();
+
+                await _media.CreateMedias(createdReview.Id, medias);
+            }
+
+            response.Data = createdReview.Id;
             response.Success = true;
             response.Message = "Review created successfully.";
             return response;
@@ -189,72 +225,10 @@ public class ReviewService
         }
     }
 
-    public async Task<ResponseModel<bool>> UpdateReview(int reviewId, UpdateReviewDTO updateReviewDto, ClaimsPrincipal userClaims)
-    {
-        var response = new ResponseModel<bool> { Success = false };
-        try
-        {
-            var review = await _review.GetReview(reviewId);
-
-            if (review == null)
-            {
-                response.Message = "Review not found.";
-                return response;
-            }
-
-            var userIdClaim = userClaims.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId) || userId != review.UserId)
-            {
-                response.Message = "You are not authorized to update this review.";
-                return response;
-            }
-
-            review.Rating = updateReviewDto.Rating ?? review.Rating;
-            review.ReviewComment = updateReviewDto.ReviewComment ?? review.ReviewComment;
-            review.UpdatedAt = DateTime.UtcNow;
-
-            if (!string.IsNullOrEmpty(updateReviewDto.MediaUrl))
-            {
-                var existingMedia = await _media.GetMediaBySourceIdAndType(review.Id, "Review");
-
-                if (existingMedia != null)
-                {
-                    existingMedia.MediaUrl = updateReviewDto.MediaUrl;
-                    existingMedia.UpdatedAt = DateTime.UtcNow;
-                    await _media.UpdateMedias(review.Id, new List<Media> { existingMedia });
-                }
-                else
-                {
-                    var newMedia = new Media
-                    {
-                        SourceType = "Review",
-                        SourceId = review.Id,
-                        MediaUrl = updateReviewDto.MediaUrl,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    await _media.CreateMedias(review.Id, new List<Media> { newMedia });
-                }
-
-                review.MediaBoolean = true;
-            }
-
-            await _review.EditReview(review);
-
-            response.Data = true;
-            response.Success = true;
-            response.Message = "Review updated successfully.";
-            return response;
-        }
-        catch (Exception ex)
-        {
-            response.Message = "An error occurred while updating the review.";
-            return response;
-        }
-    }
-
     public async Task<ResponseModel<bool>> DeleteReview(int reviewId, ClaimsPrincipal userClaims)
     {
         var response = new ResponseModel<bool> { Success = false };
+
         try
         {
             var review = await _review.GetReview(reviewId);
@@ -266,15 +240,31 @@ public class ReviewService
             }
 
             var userIdClaim = userClaims.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId) || userId != review.UserId)
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                response.Message = "Invalid user.";
+                return response;
+            }
+
+            if (userId != review.UserId)
             {
                 response.Message = "You are not authorized to delete this review.";
                 return response;
             }
 
-            await _media.DeleteMediaBySourceId(review.Id);
+            var mediaList = await _media.GetMediaBySourceId(review.Id);
 
-            await _review.DeleteReview(review);
+            foreach (var media in mediaList)
+            {
+                await _media.DeleteMedia(media);
+            }
+
+            var deleteResult = await _review.DeleteReview(review);
+            if (!deleteResult)
+            {
+                response.Message = "Failed to delete the review.";
+                return response;
+            }
 
             response.Data = true;
             response.Success = true;
@@ -287,5 +277,4 @@ public class ReviewService
             return response;
         }
     }
-
 }
