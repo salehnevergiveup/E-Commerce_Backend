@@ -23,14 +23,15 @@ public class MediaRepositoryImp : MediaRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteMedia(Media media) {
-       _context.Media.Remove(media); 
-       await _context.SaveChangesAsync(); 
+    public async Task DeleteMedia(Media media)
+    {
+        _context.Media.Remove(media);
+        await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteMediaBySourceId(int sourceId)
+    public async Task DeleteMediaBySourceIdAndType(int sourceId,  string sourceType)
     {
-        var mediaToDelete = _context.Media.Where(m => m.SourceId == sourceId).ToList();
+        var mediaToDelete = _context.Media.Where(m => m.SourceId == sourceId && m.SourceType == sourceType).ToList();
 
         _context.Media.RemoveRange(mediaToDelete);
 
@@ -48,7 +49,7 @@ public class MediaRepositoryImp : MediaRepository
             .FirstOrDefaultAsync(m => m.SourceId == sourceId && m.SourceType == sourceType);
     }
 
-      public async Task<List<Media>> GetMediaListBySourceIdAndType(int sourceId, string sourceType)
+    public async Task<List<Media>> GetMediaListBySourceIdAndType(int sourceId, string sourceType)
     {
         return await _context.Media
             .Where(m => m.SourceId == sourceId && m.SourceType == sourceType)
@@ -77,8 +78,16 @@ public class MediaRepositoryImp : MediaRepository
     {
         return await _context.Media
             .Where(m => m.SourceId == sourceId && m.SourceType == sourceType)
-            .OrderBy(m => m.Id) // Ensure the media with the smallest ID is selected
+            .OrderBy(m => m.Id) 
             .FirstOrDefaultAsync();
     }
+
+    public async Task<List<Media>> GetMediaListBySourceIdsAndType(List<int> sourceIds, string sourceType)
+    {
+        return await _context.Media
+                             .Where(m => sourceIds.Contains(m.SourceId) && m.SourceType == sourceType)
+                             .ToListAsync();
+    }
+
 
 }

@@ -10,7 +10,8 @@ public interface ReviewRepository
 
     public Task<List<ProductReview>> GetReviewByProductId(int id);
 
-    public Task<List<ProductReview>> GetReviewsByUserId(int id);
+    public Task<List<ProductReview>> GetReviewsBySalerId(int id); 
+    public Task<List<ProductReview>> GetReviewsByBuyerId(int id); 
 
     public Task<ProductReview?> GetReview(int id);
 
@@ -18,6 +19,4 @@ public interface ReviewRepository
     public Task<ProductReview?> CreateReview(ProductReview review);
 
     public Task<bool> DeleteReview(ProductReview review);
-
-    public Task<ProductReview?> EditReview(ProductReview review);
 }

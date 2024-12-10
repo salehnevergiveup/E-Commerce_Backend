@@ -356,7 +356,8 @@ namespace PototoTrade.Service.User
             }
             try
             {
-                await _mediaRepository.DeleteMediaBySourceId(user.Id);
+                await _mediaRepository.DeleteMediaBySourceIdAndType(user.Id, "User_Profile");
+                await _mediaRepository.DeleteMediaBySourceIdAndType(user.Id, "User_Cover");
                 await _userAccountRepository.DeleteUserAsync(id);
 
                 response.Success = true;

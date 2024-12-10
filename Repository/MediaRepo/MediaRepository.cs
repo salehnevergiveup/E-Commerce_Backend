@@ -13,7 +13,8 @@ public interface MediaRepository
 
     public Task<List<Media>> GetMediaListBySourceIdAndType(int sourceId, string sourceType);
 
-    public Task DeleteMediaBySourceId(int sourceId);
+
+    public Task DeleteMediaBySourceIdAndType(int sourceId, string sourceType);
 
     public Task<bool> UpdateMedias(int sourceId , List<Media> medias);
 
@@ -22,4 +23,7 @@ public interface MediaRepository
     Task<Media?> GetFirstMediaBySourceIdAndType(int sourceId, string sourceType);
     
     public Task DeleteMedia(Media media);
+
+    public Task<List<Media>> GetMediaListBySourceIdsAndType(List<int> sourceIds, string sourceType);
+
 }

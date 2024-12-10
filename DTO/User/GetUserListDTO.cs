@@ -11,11 +11,11 @@ namespace PotatoTrade.DTO.User
         public int Id { get; set; }
         public string Name { get; set; }
         public string Username { get; set; }
-        public string Email { get; set; }
-        public string RoleName { get; set; }
-        public string RoleType { get; set; }
-        public string Status { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public string? Email { get; set; } = "";
+        public string? RoleName { get; set; } ="";
+        public string? RoleType { get; set; } ="";
+        public string? Status { get; set; } ="";
+        public DateTime? CreatedAt { get; set; } = DateTime.Now;  
         public List<HandleMedia> Medias { get; set; } = new List<HandleMedia>(); // New Medias Array
     }
 }

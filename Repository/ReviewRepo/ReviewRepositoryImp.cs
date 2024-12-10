@@ -16,7 +16,9 @@ namespace PotatoTrade.Repository.ReviewRepo
 
         public async Task<List<ProductReview>> GetAllReviews()
         {
-            return await _context.ProductReviews.ToListAsync();
+            return await _context.ProductReviews
+                                .Include(p => p.Product)
+                                .Include(u => u.User).ToListAsync();
         }
 
         public async Task<List<ProductReview>> GetReviewByProductId(int id)
@@ -24,14 +26,23 @@ namespace PotatoTrade.Repository.ReviewRepo
             return await _context.ProductReviews.Where(p => p.ProductId == id).ToListAsync();
         }
 
-        public async Task<List<ProductReview>> GetReviewsByUserId(int id)
+        // get the reviews of the saler
+        public async Task<List<ProductReview>> GetReviewsBySalerId(int id)
         {
-            return await _context.ProductReviews.Where(p => p.Product.UserId == id).ToListAsync();
+            return await _context.ProductReviews.Where(p => p.Product.UserId == id)
+                                .Include(p => p.Product)
+                                .Include(u => u.User).ToListAsync();
+        }
+
+        //get the reviews of the buyer 
+        public async Task<List<ProductReview>> GetReviewsByBuyerId(int id)
+        {
+            return await _context.ProductReviews.Where(p => p.UserId == id).ToListAsync();
         }
 
         public async Task<ProductReview?> GetReview(int id)
-        { 
-        
+        {
+
             return await _context.ProductReviews.FirstOrDefaultAsync(r => r.Id == id);
         }
 
@@ -63,18 +74,6 @@ namespace PotatoTrade.Repository.ReviewRepo
             }
         }
 
-        public async Task<ProductReview?> EditReview(ProductReview review)
-        {
-            try
-            {
-                _context.ProductReviews.Update(review);
-                await _context.SaveChangesAsync();
-                return review;
-            }
-            catch (Exception e)
-            {
-                return null;
-            }
-        }
     }
+
 }
