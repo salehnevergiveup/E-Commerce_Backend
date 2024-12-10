@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using PotatoTrade.DTO.MediaDTO;
 
 namespace PototoTrade.DTO.User;
 
@@ -6,8 +7,6 @@ public record class UpdateUserDTO
 {
     public int RoleId { get; set; }
     public string UserName { get; set; }
-    public string UserCover { get; set; }
-    public string Avatar { get; set; }
     public string Name { get; set; }
     [RegularExpression("^[MF]$", ErrorMessage = "Gender must be 'M' or 'F'.")]
     public string Gender { get; set; }
@@ -18,5 +17,7 @@ public record class UpdateUserDTO
     [Phone(ErrorMessage = "Invalid phone number.")]
     public string PhoneNumber { get; set; }
     public string BillingAddress { get; set; }
+
+    public List<HandleMedia> Medias { get; set; } = new List<HandleMedia>(); // New Medias Array
 
 }

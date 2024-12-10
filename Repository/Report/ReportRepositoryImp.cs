@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PototoTrade.Data;
 using PototoTrade.DTO.ReportDTO;
-using PototoTrade.Models.Product;
 using PototoTrade.Repository.Report;
 
 namespace PototoTrade.Repositories
@@ -25,7 +24,7 @@ namespace PototoTrade.Repositories
 
         private (DateTime StartDate, DateTime EndDate) GetDateRange(TimeFrame timeFrame)
         {
-            DateTime endDate = DateTime.Now.Date; // Today's date without time component
+            DateTime endDate = DateTime.Now.Date; 
             DateTime startDate;
 
             switch (timeFrame)
@@ -162,60 +161,68 @@ namespace PototoTrade.Repositories
                 return transactions;
             }
         }
-
-        public async Task<List<RegistrationReportDTO>> GetRegistrationReport(TimeFrame timeFrame)
+        public async Task<List<ReviewReportDTO>> GetReviewReport(TimeFrame timeFrame)
         {
-
             var (startDate, endDate) = GetDateRange(timeFrame);
             var timeFrameLower = timeFrame.ToString().ToLower();
 
-            var baseQuery = _context.UserActivitiesLogs
-                .Where(log =>
-                    log.ActivityDate >= startDate &&
-                    log.ActivityDate <= endDate &&
-                    log.ActivityName.ToLower() == "registration" // Adjust based on collation
+            // Query ProductReview for reviews within the date range
+            var reviewsQuery = _context.ProductReviews
+                .AsNoTracking() // Improves performance for read-only operations
+                .Where(review =>
+                    review.ReviewDate >= startDate &&
+                    review.ReviewDate <= endDate
                 );
 
-            List<RegistrationReportDTO> registrationReports = new List<RegistrationReportDTO>();
+            // Project the necessary data
+            var projectedReviews = reviewsQuery
+                .Select(review => new
+                {
+                    review.ReviewDate,
+                    review.Rating
+                });
+
+            List<ReviewReportDTO> reviewReports = new List<ReviewReportDTO>();
 
             if (timeFrameLower == "annually" || timeFrameLower == "fiveyears")
             {
-                registrationReports = await baseQuery
-                    .GroupBy(log => log.ActivityDate.Year)
-                    .Select(group => new RegistrationReportDTO
+                reviewReports = await projectedReviews
+                    .GroupBy(r => r.ReviewDate.Year)
+                    .Select(group => new ReviewReportDTO
                     {
                         GroupingKey = group.Key.ToString(),
-                        TotalRegistrations = group.Count()
+                        GoodReviews = group.Count(r => r.Rating >= 3),
+                        BadReviews = group.Count(r => r.Rating <= 2)
                     })
                     .ToListAsync();
             }
             else if (timeFrameLower == "monthly")
             {
-                registrationReports = await baseQuery
-                    .GroupBy(log => new { log.ActivityDate.Year, log.ActivityDate.Month })
-                    .Select(group => new RegistrationReportDTO
+                reviewReports = await projectedReviews
+                    .GroupBy(r => new { r.ReviewDate.Year, r.ReviewDate.Month })
+                    .Select(group => new ReviewReportDTO
                     {
                         GroupingKey = $"{group.Key.Year}-{group.Key.Month:00}",
-                        TotalRegistrations = group.Count()
+                        GoodReviews = group.Count(r => r.Rating >= 3),
+                        BadReviews = group.Count(r => r.Rating <= 2)
                     })
                     .ToListAsync();
             }
-            else 
+            else // Assuming "daily" or any other TimeFrame
             {
-                registrationReports = await baseQuery
-                    .GroupBy(log => new { log.ActivityDate.Year, log.ActivityDate.Month, log.ActivityDate.Day })
-                    .Select(group => new RegistrationReportDTO
+                reviewReports = await projectedReviews
+                    .GroupBy(r => new { r.ReviewDate.Year, r.ReviewDate.Month, r.ReviewDate.Day })
+                    .Select(group => new ReviewReportDTO
                     {
                         GroupingKey = $"{group.Key.Year}-{group.Key.Month:00}-{group.Key.Day:00}",
-                        TotalRegistrations = group.Count()
+                        GoodReviews = group.Count(r => r.Rating >= 3),
+                        BadReviews = group.Count(r => r.Rating <= 2)
                     })
                     .ToListAsync();
             }
 
-            return registrationReports;
-
+            return reviewReports;
         }
-
 
         public async Task<List<UserStatusReportDTO>> GetUserStatusReport(TimeFrame? timeFrame = null)
         {
@@ -285,81 +292,62 @@ namespace PototoTrade.Repositories
 
         public async Task<List<RevenueReportDTO>> GetRevenueReport(TimeFrame timeFrame)
         {
-            var (startDate, endDate) = GetDateRange(timeFrame);
-            var timeFrameLower = timeFrame.ToString().ToLower();
-
-            var baseQuery = _context.PurchaseOrders
-                .Where(order =>
-                    order.OrderCreatedAt >= startDate &&
-                    order.OrderCreatedAt <= endDate &&
-                    order.Status.ToLower() == "completed"
-                );
-
-            var joinedQuery = baseQuery
-                .Join(
-                    _context.BuyerItems,
-                    order => order.Id,
-                    item => item.OrderId,
-                    (order, item) => new { order, item }
-                )
-                .Where(orderItem =>
-                    orderItem.item.ValidRefundDate.HasValue &&
-                    orderItem.item.ValidRefundDate.Value.ToDateTime(TimeOnly.MinValue) < DateTime.Now
-                )
-                .Join(
-                    _context.Products,
-                    orderItem => orderItem.item.ProductId,
-                    product => product.Id,
-                    (orderItem, product) => new { orderItem.order, product }
-                )
-                .Join(
-                    _context.ProductCategories,
-                    orderProduct => orderProduct.product.CategoryId,
-                    category => category.Id,
-                    (orderProduct, category) => new
-                    {
-                        orderProduct.order,
-                        Revenue = orderProduct.order.TotalAmount * ((decimal)category.ChargeRate / 100m)
-                    }
-                );
-
-            List<RevenueReportDTO> revenueReports = new List<RevenueReportDTO>();
-
-            if (timeFrameLower == "annually" || timeFrameLower == "fiveyears")
+            try
             {
-                revenueReports = await joinedQuery
-                    .GroupBy(o => o.order.OrderCreatedAt.Year)
-                    .Select(group => new RevenueReportDTO
-                    {
-                        GroupingKey = group.Key.ToString(),
-                        TotalRevenue = group.Sum(o => o.Revenue)
-                    })
-                    .ToListAsync();
-            }
-            else if (timeFrameLower == "monthly")
-            {
-                revenueReports = await joinedQuery
-                    .GroupBy(o => new { o.order.OrderCreatedAt.Year, o.order.OrderCreatedAt.Month })
-                    .Select(group => new RevenueReportDTO
-                    {
-                        GroupingKey = $"{group.Key.Year}-{group.Key.Month:00}",
-                        TotalRevenue = group.Sum(o => o.Revenue)
-                    })
-                    .ToListAsync();
-            }
-            else
-            {
-                revenueReports = await joinedQuery
-                    .GroupBy(o => new { o.order.OrderCreatedAt.Year, o.order.OrderCreatedAt.Month, o.order.OrderCreatedAt.Day })
-                    .Select(group => new RevenueReportDTO
-                    {
-                        GroupingKey = $"{group.Key.Year}-{group.Key.Month:00}-{group.Key.Day:00}",
-                        TotalRevenue = group.Sum(o => o.Revenue)
-                    })
-                    .ToListAsync();
-            }
+                var (startDate, endDate) = GetDateRange(timeFrame);
+                var timeFrameLower = timeFrame.ToString().ToLower();
 
-            return revenueReports;
+                var transactionsQuery = _context.WalletTransactions
+                    .AsNoTracking() 
+                    .Where(txn =>
+                        txn.WalletId == 1 &&
+                        txn.CreatedAt >= startDate &&
+                        txn.CreatedAt <= endDate &&
+                        (txn.TransactionType.ToLower() == "revenue" || txn.TransactionType.ToLower() == "cost")
+                    );
+
+                List<RevenueReportDTO> revenueReports = new List<RevenueReportDTO>();
+
+                if (timeFrameLower == "annually" || timeFrameLower == "fiveyears")
+                {
+                    revenueReports = await transactionsQuery
+                        .GroupBy(txn => txn.CreatedAt.Year)
+                        .Select(group => new RevenueReportDTO
+                        {
+                            GroupingKey = group.Key.ToString(),
+                            TotalRevenue = group.Sum(txn => txn.Amount) // Net Income
+                        })
+                        .ToListAsync();
+                }
+                else if (timeFrameLower == "monthly")
+                {
+                    revenueReports = await transactionsQuery
+                        .GroupBy(txn => new { txn.CreatedAt.Year, txn.CreatedAt.Month })
+                        .Select(group => new RevenueReportDTO
+                        {
+                            GroupingKey = $"{group.Key.Year}-{group.Key.Month:00}",
+                            TotalRevenue = group.Sum(txn => txn.Amount) // Net Income
+                        })
+                        .ToListAsync();
+                }
+                else 
+                {
+                    revenueReports = await transactionsQuery
+                        .GroupBy(txn => new { txn.CreatedAt.Year, txn.CreatedAt.Month, txn.CreatedAt.Day })
+                        .Select(group => new RevenueReportDTO
+                        {
+                            GroupingKey = $"{group.Key.Year}-{group.Key.Month:00}-{group.Key.Day:00}",
+                            TotalRevenue = group.Sum(txn => txn.Amount) // Net Income
+                        })
+                        .ToListAsync();
+                }
+
+                return revenueReports;
+            }
+            catch (Exception ex)
+            {
+                throw; 
+            }
         }
 
     }

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using Stripe;
 using Stripe.Checkout;
 using PototoTrade.Service.Wallet;
@@ -14,7 +14,7 @@ namespace PototoTrade.Controllers
 {
     [Route("api/stripe/public")]
     [ApiController]
-    public class StripeWebHook : CustomerBaseController
+    public class StripeWebHook : CustomBaseController
     {
         //whsec_59e473ce86102764c7245c1afc108486d618a69b15b413b2b2ed2e31e6cd9aa6
         

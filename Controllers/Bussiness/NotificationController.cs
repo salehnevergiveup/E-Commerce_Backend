@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using PotatoTrade.DTO.Notification;
 using PotatoTrade.Service.Notification;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 namespace PotatoTrade.Controllers.Bussiness{
     [Route("api/notifications")]
     [ApiController]
-    public class NotificationsController : CustomerBaseController
+    public class NotificationsController : CustomBaseController
     {
         private readonly IHubContext<NotificationHub> _notificationHubContext;
         private readonly NotificationService _notificationService;

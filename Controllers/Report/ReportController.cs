@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.ReportDTO;
 using PototoTrade.Service.Report;
 
@@ -8,8 +8,7 @@ namespace PototoTrade.Controllers.Report
 {
     [Route("api/report")]
     [ApiController]
-    [Authorize(Roles = "Admin,SuperAdmin")]
-    public class ReportsController : CustomerBaseController
+    public class ReportsController : CustomBaseController
     {
         private readonly ReportsService _reportService;
 
@@ -30,10 +29,11 @@ namespace PototoTrade.Controllers.Report
             return MakeResponse(await _reportService.GetTransactionReport(User, request));
         }
 
-        [HttpPost("registrations")]
-        public async Task<IActionResult> GetRegistrationReport(ReportRequestDTO request)
+        [HttpPost("reviews")]
+        public async Task<IActionResult> GetReviewReport([FromBody] ReportRequestDTO request)
         {
-            return MakeResponse(await _reportService.GetRegistrationReport(User, request));
+            var result = await _reportService.GetReviewReport(User, request);
+            return MakeResponse(result);
         }
 
         [HttpPost("user-status")]
