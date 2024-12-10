@@ -2,9 +2,9 @@ using System;
 using Microsoft.AspNetCore.Mvc;
 using PototoTrade.Service.Utilities.Response;
 
-namespace PototoTrade.Controllers.CustomerController;
+namespace PototoTrade.Controllers.CustomController;
 
-public class CustomerBaseController : ControllerBase
+public class CustomBaseController : ControllerBase
 {
     public IActionResult MakeResponse<T>(ResponseModel<T> response)
     {

@@ -1,7 +1,7 @@
 using Azure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.Service.ShoppingCart;
 using PototoTrade.Service.Utilities.Response;
 
@@ -9,7 +9,7 @@ namespace PototoTrade.Controllers.ShoppingCart
 {
     [Route("api/shoppingcart")]
     [ApiController]
-    public class ShoppingCartController : CustomerBaseController
+    public class ShoppingCartController : CustomBaseController
     {
         private readonly ShoppingCartService _shoppingCartService;
         

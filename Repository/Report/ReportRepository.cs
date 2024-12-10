@@ -8,9 +8,9 @@ public interface ReportRepository
 {
     Task<List<SalesReportDTO>> GetSalesReport(TimeFrame timeFrame);
     Task<List<TransactionReportDTO>> GetTransactionReport(TimeFrame timeFrame);
-    Task<List<RegistrationReportDTO>> GetRegistrationReport(TimeFrame timeFrame);
     Task<List<UserStatusReportDTO>> GetUserStatusReport(TimeFrame? timeFrame = null);
     Task<List<ProductCategoryReportDTO>> GetProductCategoryReport(TimeFrame? timeFrame = null);
     Task<List<RevenueReportDTO>> GetRevenueReport(TimeFrame timeFrame);
+    Task<List<ReviewReportDTO>> GetReviewReport(TimeFrame timeFrame);
 
 }

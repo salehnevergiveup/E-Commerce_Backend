@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Security.Claims;
+using PotatoTrade.DTO.MediaDTO;
 using PotatoTrade.DTO.User;
 using PototoTrade.DTO.Product;
 using PototoTrade.DTO.ShoppingCart;
@@ -54,21 +55,46 @@ namespace PototoTrade.Service.User
                 var users = userList.Select(user => new GetUserListDTO
                 {
                     Id = user.Id,
-                    Avatar = "", // Assuming AvatarMedia is correctly set up
                     Name = user.Name,
                     Username = user.Username,
                     Email = user.UserDetails.FirstOrDefault()?.Email ?? string.Empty,
                     RoleName = user.Role.RoleName,
                     RoleType = user.Role.RoleType,
                     Status = user.Status,
-                    CreatedAt = user.CreatedAt
+                    CreatedAt = user.CreatedAt,
+                    Medias = new List<HandleMedia>() //
                 }).ToList();
-
                 foreach (var user in users)
                 {
-                    var media = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Profile");
-                    user.Avatar = media == null ? "" : media.MediaUrl;
+                    // Fetch the avatar (User_Profile)
+                    var avatar = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Profile");
+                    if (avatar != null)
+                    {
+                        user.Medias.Add(new HandleMedia
+                        {
+                            Id = avatar.Id,
+                            Type = "User_Profile",
+                            MediaUrl = avatar.MediaUrl,
+                            CreatedAt = avatar.CreatedAt,
+                            UpdatedAt = avatar.UpdatedAt
+                        });
+                    }
+
+                    // Fetch the cover (User_Cover)
+                    var cover = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Cover");
+                    if (cover != null)
+                    {
+                        user.Medias.Add(new HandleMedia
+                        {
+                            Id = cover.Id,
+                            Type = "User_Cover",
+                            MediaUrl = cover.MediaUrl,
+                            CreatedAt = cover.CreatedAt,
+                            UpdatedAt = cover.UpdatedAt
+                        });
+                    }
                 }
+
 
                 response.Data = users;
                 response.Success = true;
@@ -85,9 +111,7 @@ namespace PototoTrade.Service.User
 
         public async Task<ResponseModel<GetUserDTO>> GetUser(int id, ClaimsPrincipal userClaims)
         {
-
             var response = new ResponseModel<GetUserDTO>();
-
             var userRole = userClaims.FindFirst(ClaimTypes.Name)?.Value;
 
             try
@@ -101,7 +125,7 @@ namespace PototoTrade.Service.User
                     return response;
                 }
 
-                // Create a new GetGetUserDTO object and populate initial fields
+                // Initialize GetUserDTO with basic user information
                 var userInfo = new GetUserDTO
                 {
                     Id = user.Id,
@@ -114,19 +138,17 @@ namespace PototoTrade.Service.User
                     Age = user.UserDetails.FirstOrDefault()?.Age ?? 0,
                     BillingAddress = user.UserDetails.FirstOrDefault()?.BillingAddress ?? string.Empty,
                     PhoneNumber = user.UserDetails.FirstOrDefault()?.PhoneNumber ?? string.Empty,
-                    UserCover = "",
-                    Avatar = "",
                     RoleName = user.Role.RoleName,
                     RoleType = user.Role.RoleType,
                     CreatedAt = user.CreatedAt,
                     ProductList = new List<ProductDTO>(),
                     Roles = new List<UpdateViewRoleDTO>(),
+                    Medias = new List<HandleMedia>() // Initialize Medias list
                 };
 
                 // Fetch and populate product information with media URLs
                 if (user.Products != null)
                 {
-
                     foreach (var product in user.Products)
                     {
                         var productImage = await _mediaRepository.GetMediaBySourceIdAndType(product.Id, "Product");
@@ -137,46 +159,67 @@ namespace PototoTrade.Service.User
                             CreatedAt = product.CreatedAt,
                             RefundGuaranteedDuration = product.RefundGuaranteedDuration,
                             Title = product.Title,
-                            // Fetch the media URL asynchronously
-                            Image = productImage == null ? "" : productImage.MediaUrl
+                            Image = productImage?.MediaUrl ?? string.Empty
                         };
 
                         userInfo.ProductList.Add(productDto);
                     }
                 }
 
-                //Fetch Roles 
-
+                // Fetch Roles
                 var roles = await _roleRepository.GetRolesAsync();
-                var usersRole = roles.Select(r =>
-                {
-                    return r.RoleType != "SuperAdmin" && r.RoleType != "User" ? new UpdateViewRoleDTO
+                var usersRole = roles
+                    .Where(r => r.RoleType != "SuperAdmin" && r.RoleType != "User")
+                    .Select(r => new UpdateViewRoleDTO
                     {
                         Id = r.Id,
                         RoleType = r.RoleType,
                         RoleName = r.RoleName
-                    } : null;
-                }).ToList();
+                    })
+                    .ToList();
 
                 userInfo.Roles = usersRole;
 
-                // Fetch user cover and avatar asynchronously
-                var coverImage = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "user_Cover");
-                var avatarImage = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "user_Profile");
-                userInfo.UserCover = coverImage == null ? "" : coverImage.MediaUrl;
-                userInfo.Avatar = avatarImage == null ? "" : avatarImage.MediaUrl;
+                // Fetch and add User_Profile and User_Cover media
+                var userProfileMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Profile");
+                var userCoverMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Cover");
+
+                if (userProfileMedia != null)
+                {
+                    userInfo.Medias.Add(new HandleMedia
+                    {
+                        Id = userProfileMedia.Id,
+                        Type = "User_Profile",
+                        MediaUrl = userProfileMedia.MediaUrl,
+                        CreatedAt = userProfileMedia.CreatedAt,
+                        UpdatedAt = userProfileMedia.UpdatedAt
+                    });
+                }
+
+                if (userCoverMedia != null)
+                {
+                    userInfo.Medias.Add(new HandleMedia
+                    {
+                        Id = userCoverMedia.Id,
+                        Type = "User_Cover",
+                        MediaUrl = userCoverMedia.MediaUrl,
+                        CreatedAt = userCoverMedia.CreatedAt,
+                        UpdatedAt = userCoverMedia.UpdatedAt
+                    });
+                }
 
                 response.Data = userInfo;
                 response.Success = true;
-                response.Message = "User Fetched Successfully";
-                // Fetch roles and permissions
+                response.Message = "User fetched successfully.";
 
                 return response;
-
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                response.Message = "Something Went Wrong Unable to Fetch The User Information";
+                // Log the exception (optional)
+                // _logger.LogError(ex, "Error fetching user with ID {UserId}", id);
+
+                response.Message = "Something went wrong. Unable to fetch the user information.";
                 response.Success = false;
                 return response;
             }
@@ -188,6 +231,7 @@ namespace PototoTrade.Service.User
 
             try
             {
+                // Input Validation
                 if (string.IsNullOrWhiteSpace(userInfo.Name) ||
                     string.IsNullOrWhiteSpace(userInfo.Email) ||
                     string.IsNullOrWhiteSpace(userInfo.Gender) ||
@@ -198,9 +242,11 @@ namespace PototoTrade.Service.User
                     return response;
                 }
 
+                // Check for existing email, username, and phone number
                 var existingEmail = await _userAccountRepository.GetUserByUserNameOrEmailAsync(userInfo.Email);
                 var existingUsername = await _userAccountRepository.GetUserByUserNameOrEmailAsync(userInfo.UserName);
                 var existingPhoneNumber = await _userAccountRepository.GetUserByPhoneNumber(userInfo.PhoneNumber);
+
                 if (existingEmail != null)
                 {
                     response.Message = "Email already taken.";
@@ -213,18 +259,18 @@ namespace PototoTrade.Service.User
                 }
                 if (existingPhoneNumber != null)
                 {
-                    response.Message = "Phone number already used by other account";
+                    response.Message = "Phone number already used by another account.";
                     return response;
                 }
 
-
+                // Create new user
                 var newUser = new UserAccount
                 {
                     Name = userInfo.Name,
                     Username = userInfo.UserName,
                     Status = userInfo.Status,
                     RoleId = userInfo.RoleId,
-                    PasswordHash = _hashing.Hash("password"),
+                    PasswordHash = _hashing.Hash("password"), // Consider hashing a real password or setting a default
                     CreatedAt = DateTime.UtcNow,
                     UserDetails = new List<UserDetail>
                 {
@@ -240,36 +286,41 @@ namespace PototoTrade.Service.User
                 }
                 };
 
-                //Create New User
+                // Save the new user to the database
                 await _userAccountRepository.CreateNewUser(newUser);
 
-                //Handle media 
-                if (!string.IsNullOrEmpty(userInfo.Avatar) || !string.IsNullOrEmpty(userInfo.UserCover))
+                // Handle media
+                if (userInfo.Medias != null && userInfo.Medias.Any())
                 {
                     var mediaList = new List<Media>();
 
-                    if (!string.IsNullOrEmpty(userInfo.Avatar))
+                    // Assign media types based on their positions in the array
+                    // Assuming first media is User_Profile (Avatar), second is User_Cover (Cover)
+                    for (int i = 0; i < userInfo.Medias.Count; i++)
                     {
-                        var newMediaProfile = new Media
-                        {
-                            CreatedAt = DateTime.UtcNow,
-                            SourceType = "User_Profile",
-                            SourceId = newUser.Id,
-                            MediaUrl = userInfo.Avatar
-                        };
-                        mediaList.Add(newMediaProfile);
-                    }
+                        var mediaDTO = userInfo.Medias[i];
+                        var objectKey = mediaDTO.MediaUrl;
 
-                    if (!string.IsNullOrEmpty(userInfo.UserCover))
-                    {
-                        var newMediaCover = new Media
+                        if (string.IsNullOrEmpty(objectKey))
+                        {
+                            continue; // Skip invalid URLs
+                        }
+
+                        string mediaType = mediaDTO.Type ?? "";
+                        if (mediaType == "")
+                        {
+                            continue;
+                        }
+
+                        var media = new Media
                         {
                             CreatedAt = DateTime.UtcNow,
-                            SourceType = "User_Cover",
+                            SourceType = mediaType,
                             SourceId = newUser.Id,
-                            MediaUrl = userInfo.UserCover
+                            MediaUrl = objectKey
                         };
-                        mediaList.Add(newMediaCover);
+
+                        mediaList.Add(media);
                     }
 
                     if (mediaList.Any())
@@ -278,13 +329,12 @@ namespace PototoTrade.Service.User
                     }
                 }
 
-
                 response.Success = true;
                 response.Data = newUser.Id;
                 response.Message = "User created successfully.";
                 return response;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 response.Message = "Something went wrong. Unable to create user.";
                 response.Success = false;
@@ -306,7 +356,8 @@ namespace PototoTrade.Service.User
             }
             try
             {
-                await _mediaRepository.DeleteMediaBySourceId(user.Id);
+                await _mediaRepository.DeleteMediaBySourceIdAndType(user.Id, "User_Profile");
+                await _mediaRepository.DeleteMediaBySourceIdAndType(user.Id, "User_Cover");
                 await _userAccountRepository.DeleteUserAsync(id);
 
                 response.Success = true;
@@ -324,8 +375,7 @@ namespace PototoTrade.Service.User
             }
         }
 
-
-        public async Task<ResponseModel<bool>> updateUser(int id, UpdateUserDTO userInfo, ClaimsPrincipal userClaims)
+        public async Task<ResponseModel<bool>> UpdateUser(int id, UpdateUserDTO userInfo, ClaimsPrincipal userClaims)
         {
             var response = new ResponseModel<bool> { Success = false, Data = false };
             try
@@ -340,15 +390,15 @@ namespace PototoTrade.Service.User
 
                 var userRole = userClaims.FindFirst(ClaimTypes.Name)?.Value;
 
-                var CreateUser = await _userAccountRepository.GetUserByUserNameOrEmailAsync(userInfo.Email);
-                if (CreateUser != null && CreateUser.Id != id)
+                var emailUser = await _userAccountRepository.GetUserByUserNameOrEmailAsync(userInfo.Email);
+                if (emailUser != null && emailUser.Id != id)
                 {
                     response.Message = "Email already taken.";
                     return response;
                 }
 
-                var existingUser = await _userAccountRepository.GetUserByUserNameOrEmailAsync(userInfo.UserName);
-                if (existingUser != null && existingUser.Id != id)
+                var usernameUser = await _userAccountRepository.GetUserByUserNameOrEmailAsync(userInfo.UserName);
+                if (usernameUser != null && usernameUser.Id != id)
                 {
                     response.Message = "Username already taken.";
                     return response;
@@ -361,6 +411,7 @@ namespace PototoTrade.Service.User
                 user.UpdatedAt = DateTime.UtcNow;
 
                 var userDetails = user.UserDetails.FirstOrDefault();
+
                 if (userDetails != null)
                 {
                     userDetails.Gender = userInfo.Gender;
@@ -376,69 +427,64 @@ namespace PototoTrade.Service.User
                     return response;
                 }
 
-                if (!string.IsNullOrEmpty(userInfo.Avatar) || !string.IsNullOrEmpty(userInfo.UserCover))
+                // Handle media updates
+                var coverMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Cover");
+                var profileMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Profile");
+
+                foreach (var mediaInput in userInfo.Medias)
                 {
-                    var mediaList = new List<Media>();
-
-                    if (!string.IsNullOrEmpty(userInfo.Avatar))
+                    if (mediaInput.Type == "User_Cover")
                     {
-                        var existingProfileMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Profile");
-                        if (existingProfileMedia == null)
+                        if (mediaInput.MediaUrl == "" && coverMedia != null)
                         {
-                            var newMediaProfile = new Media
+                            await _mediaRepository.DeleteMedia(coverMedia);
+                        }
+                        else if (coverMedia != null)
+                        {
+                            coverMedia.MediaUrl = mediaInput.MediaUrl;
+                            coverMedia.UpdatedAt = DateTime.UtcNow;
+                            await _mediaRepository.UpdateMedias(user.Id, new List<Media> { coverMedia });
+                        }
+                        else if(mediaInput.MediaUrl != "" && coverMedia== null)
+                        {
+                            var newCoverMedia = new Media
                             {
-                                CreatedAt = DateTime.UtcNow,
-                                SourceType = "User_Profile",
                                 SourceId = user.Id,
-                                MediaUrl = userInfo.Avatar
-                            };
-                            mediaList.Add(newMediaProfile);
-                        }
-                        else
-                        {
-                            existingProfileMedia.MediaUrl = userInfo.Avatar;
-                            existingProfileMedia.UpdatedAt = DateTime.UtcNow;
-                            mediaList.Add(existingProfileMedia);
-                        }
-                    }
-
-                    // Handle Cover Image (User_Cover)
-                    if (!string.IsNullOrEmpty(userInfo.UserCover))
-                    {
-                        var existingCoverMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Cover");
-                        if (existingCoverMedia == null)
-                        {
-                            var newMediaCover = new Media
-                            {
-                                CreatedAt = DateTime.UtcNow,
                                 SourceType = "User_Cover",
-                                SourceId = user.Id,
-                                MediaUrl = userInfo.UserCover
+                                MediaUrl = mediaInput.MediaUrl,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
                             };
-                            mediaList.Add(newMediaCover);
+                            await _mediaRepository.CreateMedias(user.Id, new List<Media> { newCoverMedia });
                         }
-                        else
+                    }
+                    else if (mediaInput.Type == "User_Profile")
+                    {
+                        if (mediaInput.MediaUrl == "" && profileMedia != null)
                         {
-                            existingCoverMedia.MediaUrl = userInfo.UserCover;
-                            existingCoverMedia.UpdatedAt = DateTime.UtcNow;
-                            mediaList.Add(existingCoverMedia);
+                            await _mediaRepository.DeleteMedia(profileMedia);
                         }
-                    }
-
-                    // Separate mediaList into existing media to update and new media to create
-                    var mediasToUpdate = mediaList.Where(m => m.Id != 0).ToList();
-                    var mediasToCreate = mediaList.Where(m => m.Id == 0).ToList();
-
-                    if (mediasToUpdate.Any())
-                    {
-                        await _mediaRepository.UpdateMedias(user.Id, mediasToUpdate);
-                    }
-
-                    if (mediasToCreate.Any())
-                    {
-                        await _mediaRepository.CreateMedias(user.Id, mediasToCreate);
+                        else if (profileMedia != null)
+                        {
+                            profileMedia.MediaUrl = mediaInput.MediaUrl;
+                            profileMedia.UpdatedAt = DateTime.UtcNow;
+                            await _mediaRepository.UpdateMedias(user.Id, new List<Media> { profileMedia });
+                        }
+                        else if(mediaInput.MediaUrl != "" && profileMedia == null)
+                        {
+                            var newProfileMedia = new Media
+                            {
+                                SourceId = user.Id,
+                                SourceType = "User_Profile",
+                                MediaUrl = mediaInput.MediaUrl,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            await _mediaRepository.CreateMedias(user.Id, new List<Media> { newProfileMedia });
+                        }
                     }
                 }
+
                 await _userAccountRepository.UpdateUserAsync(user);
                 response.Success = true;
                 response.Data = true;
@@ -453,9 +499,7 @@ namespace PototoTrade.Service.User
                 response.Data = false;
                 return response;
             }
-
         }
-
 
         public async Task<ResponseModel<GetUserDTO>> GetUserProfile(int id)
         {
@@ -472,17 +516,86 @@ namespace PototoTrade.Service.User
                     return response;
                 }
 
+                // Initialize GetUserDTO with basic user information
                 var userInfo = new GetUserDTO
                 {
                     Id = user.Id,
                     UserName = user.Username,
                     Name = user.Name,
                     Status = user.Status,
-                    Avatar = string.Empty
+                    Gender = user.UserDetails.FirstOrDefault()?.Gender ?? string.Empty,
+                    Email = user.UserDetails.FirstOrDefault()?.Email ?? string.Empty,
+                    Age = user.UserDetails.FirstOrDefault()?.Age ?? 0,
+                    BillingAddress = user.UserDetails.FirstOrDefault()?.BillingAddress ?? string.Empty,
+                    PhoneNumber = user.UserDetails.FirstOrDefault()?.PhoneNumber ?? string.Empty,
+                    RoleName = user.Role.RoleName,
+                    RoleType = user.Role.RoleType,
+                    CreatedAt = user.CreatedAt,
+                    ProductList = new List<ProductDTO>(),
+                    Roles = new List<UpdateViewRoleDTO>(),
+                    Medias = new List<HandleMedia>() // Initialize Medias list
                 };
 
-                var avatarMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Profile");
-                userInfo.Avatar = avatarMedia?.MediaUrl ?? string.Empty;
+                // Fetch and populate product information with media URLs
+                if (user.Products != null)
+                {
+                    foreach (var product in user.Products)
+                    {
+                        var productImage = await _mediaRepository.GetMediaBySourceIdAndType(product.Id, "Product");
+                        var productDto = new ProductDTO
+                        {
+                            Id = product.Id,
+                            Price = product.Price,
+                            CreatedAt = product.CreatedAt,
+                            RefundGuaranteedDuration = product.RefundGuaranteedDuration,
+                            Title = product.Title,
+                            Image = productImage?.MediaUrl ?? string.Empty
+                        };
+
+                        userInfo.ProductList.Add(productDto);
+                    }
+                }
+
+                // Fetch Roles
+                var roles = await _roleRepository.GetRolesAsync();
+                var usersRole = roles
+                    .Where(r => r.RoleType != "SuperAdmin" && r.RoleType != "User")
+                    .Select(r => new UpdateViewRoleDTO
+                    {
+                        Id = r.Id,
+                        RoleType = r.RoleType,
+                        RoleName = r.RoleName
+                    })
+                    .ToList();
+
+                userInfo.Roles = usersRole;
+
+                var userProfileMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Profile");
+                var userCoverMedia = await _mediaRepository.GetMediaBySourceIdAndType(user.Id, "User_Cover");
+
+                if (userProfileMedia != null)
+                {
+                    userInfo.Medias.Add(new HandleMedia
+                    {
+                        Id = userProfileMedia.Id,
+                        Type = "User_Profile",
+                        MediaUrl = userProfileMedia.MediaUrl,
+                        CreatedAt = userProfileMedia.CreatedAt,
+                        UpdatedAt = userProfileMedia.UpdatedAt
+                    });
+                }
+
+                if (userCoverMedia != null)
+                {
+                    userInfo.Medias.Add(new HandleMedia
+                    {
+                        Id = userCoverMedia.Id,
+                        Type = "User_Cover",
+                        MediaUrl = userCoverMedia.MediaUrl,
+                        CreatedAt = userCoverMedia.CreatedAt,
+                        UpdatedAt = userCoverMedia.UpdatedAt
+                    });
+                }
 
                 response.Data = userInfo;
                 response.Success = true;
@@ -490,8 +603,9 @@ namespace PototoTrade.Service.User
 
                 return response;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
+
                 response.Success = false;
                 response.Message = "An error occurred while retrieving the user profile.";
                 return response;

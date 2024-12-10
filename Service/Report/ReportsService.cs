@@ -91,11 +91,11 @@ namespace PototoTrade.Service.Report
 
             try
             {
-                if (!IsUserAdmin(userClaims))
-                {
-                    response.Message = "Unauthorized access. Admin privileges required.";
-                    return response;
-                }
+                // if (!IsUserAdmin(userClaims))
+                // {
+                //     response.Message = "Unauthorized access. Admin privileges required.";
+                //     return response;
+                // }
 
                 if (request == null)
                 {
@@ -105,7 +105,7 @@ namespace PototoTrade.Service.Report
 
                 if (!TryParseTimeFrame(request.TimeFrame, out TimeFrame timeFrame))
                 {
-                    response.Message = $"Invalid TimeFrame value: {request.TimeFrame}. Valid values are: Weekly, Monthly, Annually, FiveYears.";
+                    response.Message = $"Invalid TimeFrame value: {request.TimeFrame}. Valid values are: Weekly, Monthly, Annually.";
                     return response;
                 }
 
@@ -128,23 +128,22 @@ namespace PototoTrade.Service.Report
 
             return response;
         }
-
-        public async Task<ResponseModel<List<RegistrationReportDTO>>> GetRegistrationReport(ClaimsPrincipal userClaims, ReportRequestDTO request)
+        public async Task<ResponseModel<List<ReviewReportDTO>>> GetReviewReport(ClaimsPrincipal userClaims, ReportRequestDTO request)
         {
-            var response = new ResponseModel<List<RegistrationReportDTO>>
+            var response = new ResponseModel<List<ReviewReportDTO>>
             {
                 Success = false,
                 Data = null,
-                Message = "Failed to retrieve registration report."
+                Message = "Failed to retrieve review report."
             };
 
             try
             {
-                if (!IsUserAdmin(userClaims))
-                {
-                    response.Message = "Unauthorized access. Admin privileges required.";
-                    return response;
-                }
+                // if (!IsUserAdmin(userClaims))
+                // {
+                //     response.Message = "Unauthorized access. Admin privileges required.";
+                //     return response;
+                // }
 
                 if (request == null)
                 {
@@ -154,25 +153,25 @@ namespace PototoTrade.Service.Report
 
                 if (!TryParseTimeFrame(request.TimeFrame, out TimeFrame timeFrame))
                 {
-                    response.Message = $"Invalid TimeFrame value: {request.TimeFrame}. Valid values are: Weekly, Monthly, Annually, FiveYears.";
+                    response.Message = $"Invalid TimeFrame value: {request.TimeFrame}. Valid values are: Daily, Monthly, Annually, FiveYears.";
                     return response;
                 }
 
-                var reportData = await _reportRepository.GetRegistrationReport(timeFrame);
+                var reportData = await _reportRepository.GetReviewReport(timeFrame);
 
                 if (reportData == null || reportData.Count == 0)
                 {
-                    response.Message = "No registration data available for the selected time frame.";
+                    response.Message = "No review data available for the selected time frame.";
                     return response;
                 }
 
                 response.Data = reportData;
                 response.Success = true;
-                response.Message = "Registration report retrieved successfully.";
+                response.Message = "Review report retrieved successfully.";
             }
             catch (Exception ex)
             {
-                response.Message = "An error occurred while retrieving the registration report.";
+                response.Message = "An error occurred while retrieving the review report.";
             }
 
             return response;
@@ -291,11 +290,11 @@ namespace PototoTrade.Service.Report
 
             try
             {
-                if (!IsUserAdmin(userClaims))
-                {
-                    response.Message = "Unauthorized access. Admin privileges required.";
-                    return response;
-                }
+                // if (!IsUserAdmin(userClaims))
+                // {
+                //     response.Message = "Unauthorized access. Admin privileges required.";
+                //     return response;
+                // }
 
                 if (request == null)
                 {

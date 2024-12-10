@@ -24,6 +24,9 @@ using PototoTrade.ServiceBusiness.LLM;
 using PototoTrade.Repositories;
 using PototoTrade.Repository.Report;
 using PototoTrade.Service.Report;
+using PototoTrade.Service.Review;
+using PototoTrade.Repository.ReivewRepo;
+using PotatoTrade.Repository.ReviewRepo;
 using PototoTrade.Models;
 using Stripe;
 using PototoTrade.Repository.Wallet;
@@ -79,6 +82,7 @@ builder.Services.AddScoped<ShoppingCartItemRepository, ShoppingCartItemRepositor
 builder.Services.AddScoped<ShoppingCartRepository, ShoppingCartRrepositoryImp>();
 builder.Services.AddScoped<ProductRepository, ProductRepositoryImpl>();
 builder.Services.AddScoped<ReportRepository,ReportRepositoryImp>(); 
+builder.Services.AddScoped<ReviewRepository, ReviewRepositoryImpl>(); 
 builder.Services.AddScoped<IHashing, Hashing>();
 builder.Services.AddTransient<SeederFacade>();
 builder.Services.AddScoped<WalletRepository,WalletRepositoryImp>();
@@ -99,6 +103,7 @@ builder.Services.AddScoped<ShoppingCartService>();
 builder.Services.AddScoped<LlamaIntegration>();
 builder.Services.AddScoped<LLMService>();  
 builder.Services.AddScoped<ReportsService>(); 
+builder.Services.AddScoped<ProductReviewService>(); 
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor(); // for the websocket
 builder.Services.AddScoped<UserWalletService>();
@@ -175,15 +180,7 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseMiddleware<FilterMiddleware>();
-
-//app.MapHub<ChatHub>("/Chat"); //connection to chat hub
-
-
-
-//TODO: figure out how to use chat with middleware
-//TODO: once user click on 'chat now' cehck if user is authenticated, if !authenticated throw user to regiser/login page, if authenticated, extract user info.
-
+// app.UseMiddleware<FilterMiddleware>();
 app.UseCookiePolicy(new CookiePolicyOptions
 {
     MinimumSameSitePolicy = SameSiteMode.None,

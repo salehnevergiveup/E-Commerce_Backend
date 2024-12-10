@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.Common;
 using PototoTrade.DTO.Product;
 using PototoTrade.Service.BuyerItem;
@@ -11,7 +11,7 @@ namespace PototoTrade.Controllers.BuyerItem
     [Route("api/buyer-item")]
     [ApiController]
     [Authorize(Roles = "User,Admin, SuperAdmin")]
-    public class BuyerItemController : CustomerBaseController
+    public class BuyerItemController : CustomBaseController
     {
 
         private readonly BuyerItemService _buyerItemService;

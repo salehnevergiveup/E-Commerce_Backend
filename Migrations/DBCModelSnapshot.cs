@@ -307,7 +307,8 @@ namespace PototoTrade.Migrations
 
                     b.Property<string>("ReceiverUsername")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("longtext")
+                        .HasColumnName("ReceiverUsername");
 
                     b.Property<int>("SenderId")
                         .HasColumnType("int")
@@ -315,7 +316,8 @@ namespace PototoTrade.Migrations
 
                     b.Property<string>("SenderUsername")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("longtext")
+                        .HasColumnName("SenderUsername");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1137,7 +1139,8 @@ namespace PototoTrade.Migrations
 
                     b.Property<string>("UserUsername")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("longtext")
+                        .HasColumnName("UserUsername");
 
                     b.HasKey("UserNotificationId")
                         .HasName("PRIMARY");

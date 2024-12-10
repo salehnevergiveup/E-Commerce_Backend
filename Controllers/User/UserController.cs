@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.User;
 using PototoTrade.Service.User;
 
@@ -7,7 +7,7 @@ namespace PototoTrade.Controllers.User
 {
     [ApiController]
     [Route("api/users")]
-    public class UserController : CustomerBaseController
+    public class UserController : CustomBaseController
     {
         private readonly UserAccountService _userService;
 
@@ -44,7 +44,7 @@ namespace PototoTrade.Controllers.User
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UpdateUserDTO updateUserDto)
         {
-            return MakeResponse(await _userService.updateUser(id, updateUserDto, User));
+            return MakeResponse(await _userService.UpdateUser(id, updateUserDto, User));
         }
 
         [HttpGet("profile/{id}")]
