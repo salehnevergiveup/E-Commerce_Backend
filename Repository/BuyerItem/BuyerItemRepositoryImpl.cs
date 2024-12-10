@@ -85,6 +85,16 @@ public class BuyerItemRepositoryImpl : BuyerItemRepository
             .ToListAsync();
     }
 
+    public async Task<BuyerItems?> GetSingerBuyerItemsByStatusAndUserId(string status, int userId, int productId)
+    {
+        return await _context.BuyerItems
+            .Include(b => b.Product)
+                .ThenInclude(p => p.User) 
+            .Include(b => b.BuyerItemDeliveries) 
+            .FirstOrDefaultAsync(b => b.Status == status && b.BuyerId == userId && b.ProductId == productId);
+    }
+
+
     public async Task<List<BuyerItems>> GetBuyerItemsByStatusesAndUserId(IEnumerable<string> statuses, int userId)
     {
         return await _context.BuyerItems

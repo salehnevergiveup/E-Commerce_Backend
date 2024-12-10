@@ -18,7 +18,10 @@ public class PurchaseOrderRepositoryImpl : PurchaseOrderRepository
     public async Task<PurchaseOrder?> GetPendingOrderByUserId(int userId)
     {
         return await _context.PurchaseOrders
-            .FirstOrDefaultAsync(o => o.UserId == userId && o.Status == "pending");
+        .Include(o => o.BuyerItems) // Include BuyerItems
+        .ThenInclude(bi => bi.Product) // Include the Product related to the BuyerItem
+        .ThenInclude(p => p.User) // Include the User related to the Product
+        .FirstOrDefaultAsync(o => o.UserId == userId && o.Status == "pending");
     }
 
     public async Task<int> CreatePurchaseOrder(PurchaseOrder order)

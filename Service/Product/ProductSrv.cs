@@ -188,7 +188,7 @@ namespace PototoTrade.Service.Product
                     Success = customEx.Response.Success,
                     Code = customEx.Response.Code,
                     Message = customEx.Response.Message,
-                    Data = customEx.Response.Data == null ? default(T)! : (T)(object)customEx.Response.Data
+                    Data = customEx.Response.Data == null ? default! : (T)(object)customEx.Response.Data
                 };
             }
             catch (Exception ex)
@@ -199,7 +199,7 @@ namespace PototoTrade.Service.Product
                     Success = false,
                     Code = "500",
                     Message = "An error occurred while retrieving the product categories.",
-                    Data = default
+                    Data = default!
                 };
             }
         }
@@ -264,6 +264,7 @@ namespace PototoTrade.Service.Product
                         Title = product.Title,
                         Description = product.Description,
                         Price = product.Price,
+                        ProductCategoryName = product.Category.ProductCategoryName,
                         RefundGuaranteedDuration = product.RefundGuaranteedDuration,
                         CreatedAt = product.CreatedAt,
                         UserId = product.User.Id,
@@ -277,7 +278,7 @@ namespace PototoTrade.Service.Product
                     Success = true,
                     Code = "200",
                     Message = "Products retrieved successfully.",
-                    Data = (T)(object)productList
+                    Data = default(T) ?? (T)(object)productList
                 };
             }
             catch (CustomException<GeneralMessageDTO> customEx)
@@ -288,7 +289,7 @@ namespace PototoTrade.Service.Product
                     Success = customEx.Response.Success,
                     Code = customEx.Response.Code,
                     Message = customEx.Response.Message,
-                    Data = customEx.Response.Data == null ? default(T)! : (T)(object)customEx.Response.Data
+                    Data = customEx.Response.Data == null ? default! : (T)(object)customEx.Response.Data
                 };
             }
             catch (Exception ex)
@@ -299,7 +300,113 @@ namespace PototoTrade.Service.Product
                     Success = false,
                     Code = "500",
                     Message = "An error occurred while retrieving products.",
-                    Data = default
+                    Data = default!
+                };
+            }
+        }
+
+         public async Task<ResponseModel<T>> ViewAvailableProductsByCategory<T>(ViewProductsRequestDTO request)
+        {
+            try
+            {
+                if (request.ProductCategoryId <= 0)
+                {
+                    return new ResponseModel<T>
+                    {
+                        Success = false,
+                        Code = "400",
+                        Message = "Invalid ProductCategoryId.",
+                        Data = default
+                    };
+                }
+
+                var productCategory = await _productRepository.GetCategoryById(request.ProductCategoryId);
+                if (productCategory == null)
+                {
+                    throw new CustomException<GeneralMessageDTO>(ExceptionEnum.GetException("PRODUCT_CATEGORY_NOT_FOUND"));
+                }
+                var products = await _productRepository.GetProductsByCategoryId(request.ProductCategoryId);
+
+                if (products == null || !products.Any())
+                {
+                    throw new CustomException<GeneralMessageDTO>(
+                        ExceptionEnum.GetException("PRODUCT_NOT_FOUND"),
+                        new GeneralMessageDTO
+                        {
+                            Message = $"The Category :{productCategory.ProductCategoryName} has no any product",
+                            Success = false
+                        }
+                    );
+                }
+
+                var productList = new List<ProductDetailsDTO>();
+
+                foreach (var product in products)
+                {
+                     if (product.Status != "available")
+                    {
+                        continue;
+                    }
+
+                    var mediaList = new List<MediaDTO>();
+
+                    if (product.MediaBoolean)
+                    {
+                        var media = await _mediaRepository.GetMediaListBySourceIdAndType(product.Id, "PRODUCT");
+                        mediaList = media != null && media.Any()
+                        ? media.Select(m => new MediaDTO
+                        {
+                            Id = m.Id,
+                            MediaUrl = m.MediaUrl,
+                            CreatedAt = m.CreatedAt,
+                            UpdatedAt = m.UpdatedAt
+                        }).ToList()
+                        : null;
+                    }
+
+                    productList.Add(new ProductDetailsDTO
+                    {
+                        ProductId = product.Id,
+                        Title = product.Title,
+                        Description = product.Description,
+                        Price = product.Price,
+                        ProductCategoryName = product.Category.ProductCategoryName,
+                        RefundGuaranteedDuration = product.RefundGuaranteedDuration,
+                        CreatedAt = product.CreatedAt,
+                        UserId = product.User.Id,
+                        UserName = product.User.Name,
+                        Media = mediaList
+                    });
+                }
+
+                return new ResponseModel<T>
+                {
+                    Success = true,
+                    Code = "200",
+                    Message = "Products retrieved successfully.",
+                    Data = default(T) ?? (T)(object)productList
+                };
+            }
+            catch (CustomException<GeneralMessageDTO> customEx)
+            {
+                Console.Error.WriteLine($"CustomException: {customEx.Response.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = customEx.Response.Success,
+                    Code = customEx.Response.Code,
+                    Message = customEx.Response.Message,
+                    Data = customEx.Response.Data == null ? default! : (T)(object)customEx.Response.Data
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error retrieving products for category ID {request.ProductCategoryId}: {ex.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = false,
+                    Code = "500",
+                    Message = "An error occurred while retrieving products.",
+                    Data = default!
                 };
             }
         }
@@ -311,6 +418,7 @@ namespace PototoTrade.Service.Product
                 var products = await _productRepository.GetAllProducts();
                 if (products == null || !products.Any())
                 {
+                    Console.Error.WriteLine("Products is null or empty");
                     throw new CustomException<GeneralMessageDTO>(
                         ExceptionEnum.GetException("PRODUCT_NOT_FOUND"),
                         new GeneralMessageDTO
@@ -321,10 +429,27 @@ namespace PototoTrade.Service.Product
                     );
                 }
 
+
                 var productList = new List<ProductDetailsDTO>();
 
                 foreach (var product in products)
                 {
+                    if (product == null)
+                    {
+                        Console.Error.WriteLine("A product is null");
+                        continue;
+                    }
+
+                    if (product.Category == null)
+                    {
+                        throw new Exception($"Product {product.Id} has no category.");
+                    }
+
+                    if (product.User == null)
+                    {
+                        throw new Exception($"Product {product.Id} has no associated user.");
+                    }
+
                     var mediaList = new List<MediaDTO>();
 
                     if (product.MediaBoolean)
@@ -347,14 +472,20 @@ namespace PototoTrade.Service.Product
                         Title = product.Title,
                         Description = product.Description,
                         Price = product.Price,
+                        ProductCategoryName = product.Category.ProductCategoryName ?? "Unknown",
                         RefundGuaranteedDuration = product.RefundGuaranteedDuration,
                         CreatedAt = product.CreatedAt,
                         UserId = product.User.Id,
-                        UserName = product.User.Name,
+                        UserName = product.User.Name ?? "Unknown",
                         Media = mediaList
                     });
                 }
-                productList = productList.OrderByDescending(p => p.CreatedAt).ToList();
+
+                Console.Error.WriteLine("Final product list:");
+                foreach (var product in productList)
+                {
+                    Console.Error.WriteLine($"Product: {product.Title}, Category: {product.ProductCategoryName}, User: {product.UserName}");
+                }
 
                 return new ResponseModel<T>
                 {
@@ -387,6 +518,115 @@ namespace PototoTrade.Service.Product
                 };
             }
         }
+
+        public async Task<ResponseModel<T>> ViewAllAvailableProducts<T>()
+        {
+            try
+            {
+                var products = await _productRepository.GetAllProducts();
+
+                if (products == null || !products.Any())
+                {
+                    Console.Error.WriteLine("Products is null or empty");
+                    throw new CustomException<GeneralMessageDTO>(
+                        ExceptionEnum.GetException("PRODUCT_NOT_FOUND"),
+                        new GeneralMessageDTO
+                        {
+                            Message = "No products found.",
+                            Success = false
+                        }
+                    );
+                }
+
+                var productList = new List<ProductDetailsDTO>();
+
+                foreach (var product in products)
+                {
+                    if (product == null)
+                    {
+                        Console.Error.WriteLine("A product is null");
+                        continue;
+                    }
+
+                    if (product.Status != "available")
+                    {
+                        continue;
+                    }
+
+                    if (product.Category == null)
+                    {
+                        throw new Exception($"Product {product.Id} has no category.");
+                    }
+
+                    if (product.User == null)
+                    {
+                        throw new Exception($"Product {product.Id} has no associated user.");
+                    }
+
+                    var mediaList = new List<MediaDTO>();
+
+                    if (product.MediaBoolean)
+                    {
+                        var media = await _mediaRepository.GetMediaListBySourceIdAndType(product.Id, "PRODUCT");
+                        mediaList = media != null && media.Any()
+                            ? media.Select(m => new MediaDTO
+                            {
+                                Id = m.Id,
+                                MediaUrl = m.MediaUrl,
+                                CreatedAt = m.CreatedAt,
+                                UpdatedAt = m.UpdatedAt
+                            }).ToList()
+                            : null;
+                    }
+
+                    productList.Add(new ProductDetailsDTO
+                    {
+                        ProductId = product.Id,
+                        Title = product.Title,
+                        Description = product.Description,
+                        Price = product.Price,
+                        ProductCategoryName = product.Category.ProductCategoryName ?? "Unknown",
+                        RefundGuaranteedDuration = product.RefundGuaranteedDuration,
+                        CreatedAt = product.CreatedAt,
+                        UserId = product.User.Id,
+                        UserName = product.User.Name ?? "Unknown",
+                        Media = mediaList
+                    });
+                }
+
+                return new ResponseModel<T>
+                {
+                    Success = true,
+                    Code = "200",
+                    Message = "Products retrieved successfully.",
+                    Data = (T)(object)productList
+                };
+            }
+            catch (CustomException<GeneralMessageDTO> customEx)
+            {
+                Console.Error.WriteLine($"CustomException: {customEx.Response.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = customEx.Response.Success,
+                    Code = customEx.Response.Code,
+                    Message = customEx.Response.Message,
+                    Data = customEx.Response.Data == null ? default(T)! : (T)(object)customEx.Response.Data
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error retrieving all products: {ex.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = false,
+                    Code = "500",
+                    Message = "An error occurred while retrieving products.",
+                    Data = default
+                };
+            }
+        }
+
+
 
         public async Task<ResponseModel<T>> EditProduct<T>(ClaimsPrincipal userClaims, EditProductDetailDto editProductDto)
         {
@@ -480,13 +720,14 @@ namespace PototoTrade.Service.Product
                 {
                     throw new CustomException<GeneralMessageDTO>(
                         ExceptionEnum.GetException("PRODUCT_NOT_DELETABLE")
-                       
+
                     );
                 }
-                if(product.MediaBoolean){
+                if (product.MediaBoolean)
+                {
                     await _mediaService.DeleteMedia(product.Id, "PRODUCT");
                 }
-                
+
                 await _productRepository.DeleteProductAsync(product);
 
                 return new ResponseModel<T>

@@ -18,6 +18,9 @@ public interface BuyerItemRepository
     Task<BuyerItems?> GetBuyerItemById(int buyerItemId);
     Task<List<BuyerItems>> GetAllBuyerItems();
     Task<List<BuyerItems>> GetBuyerItemsByStatusAndUserId(string status, int userId);
+
+    Task<BuyerItems?> GetSingerBuyerItemsByStatusAndUserId(string status, int userId, int productId);
+
     Task<List<BuyerItems>> GetBuyerItemsByStatusesAndUserId(IEnumerable<string> statuses, int userId);
 
     Task<BuyerItems?> GetLatestBuyerItemByProductId(int productId);
