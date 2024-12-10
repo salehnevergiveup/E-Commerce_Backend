@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using PototoTrade.DTO.CartItem;
 using PototoTrade.DTO.ShoppingCart;
 using PototoTrade.Models.ShoppingCart;
+using PototoTrade.Repository.BuyerItem;
 using PototoTrade.Repository.Cart;
 using PototoTrade.Repository.CartItems;
 using PototoTrade.Repository.Product;
@@ -18,12 +19,16 @@ public class ShoppingCartItemsService
 
     private readonly IHubContext<CartHub> _cartHubContext;
 
-    public ShoppingCartItemsService(ShoppingCartItemRepository shoppingCartItem, ProductRepository product, ShoppingCartRepository shoppingCart, IHubContext<CartHub> cartHubContext, IHttpContextAccessor httpContextAccessor)
+    private readonly BuyerItemRepository _buyerItemRepository;
+
+    public ShoppingCartItemsService(ShoppingCartItemRepository shoppingCartItem, ProductRepository product, ShoppingCartRepository shoppingCart, IHubContext<CartHub> cartHubContext, IHttpContextAccessor httpContextAccessor,
+    BuyerItemRepository buyerItemRepository)
     {
         _shoppingCartItem = shoppingCartItem;
         _product = product;
         _shoppingCart = shoppingCart;
         _cartHubContext = cartHubContext;
+        _buyerItemRepository = buyerItemRepository;
     }
 
     public async Task<ResponseModel<int>> CreateCartItem(CreateCartItemDTO cartItem, ClaimsPrincipal userClaims)
@@ -46,8 +51,15 @@ public class ShoppingCartItemsService
                 return response;
             }
 
+            var buyerItemExist = await _buyerItemRepository.GetSingerBuyerItemsByStatusAndUserId("pending", userId,cartItem.ProductId);
+            if (buyerItemExist != null && buyerItemExist.Status == "pending")
+            {
+                response.Message = $"Product has been added to your purchase order {buyerItemExist.OrderId}";
+                return response;
+            }
+
             var product = await _product.GetProduct(cartItem.ProductId);
-            if (product == null || product.Status != "Available")
+            if (product == null || product.Status != "available")
             {
                 response.Message = "Product is not available.";
                 return response;

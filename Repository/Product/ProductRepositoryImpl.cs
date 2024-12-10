@@ -70,6 +70,7 @@ public class ProductRepositoryImpl : ProductRepository
     {
         return await _context.Products
             .Include(product => product.User)
+            .Include(product => product.Category)
             .ToListAsync();
     }
 

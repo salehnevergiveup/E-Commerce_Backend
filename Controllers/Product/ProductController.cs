@@ -33,24 +33,6 @@ namespace PototoTrade.Controllers.Product
             return MakeResponse(await _productService.EditCategory<GeneralMessageDTO>(categoryDto));
         }
 
-        [HttpGet("get-product-category-list")]
-        public async Task<IActionResult> GetProductCategoryList()
-        {
-            return MakeResponse(await _productService.GetProductCategoryList<List<ProductCategoryListDTO>>());
-        }
-
-        [HttpPost("view-products-by-category")]
-        public async Task<IActionResult> ViewProductsViaProductCategory(ViewProductsRequestDTO request)
-        {
-            return MakeResponse(await _productService.ViewProductsByCategory<List<ProductDetailsDTO>>(request));
-        }
-
-        [HttpGet("view-all-products")]
-        public async Task<IActionResult> ViewAllProducts()
-        {
-            return MakeResponse(await _productService.ViewAllProducts<List<ProductDetailsDTO>>());
-        }
-
         [HttpPost("create-product")]
         public async Task<IActionResult> CreateProduct(CreateProductDTO createProductDto)
         {
@@ -119,7 +101,7 @@ namespace PototoTrade.Controllers.Product
             return MakeResponse(await _productService.ViewProductDetails<GeneralMessageDTO>(productId, User));
         }
 
-        [HttpDelete("delete-product")]
+        [HttpPut("delete-product")]
         public async Task<IActionResult> DeleteProduct([FromQuery] int productId)
         {
             return MakeResponse(await _productService.DeleteProduct<GeneralMessageDTO>(productId, User));

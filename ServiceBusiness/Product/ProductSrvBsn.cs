@@ -166,7 +166,7 @@ namespace PototoTrade.Service.Product
                 }
 
                 var availableItems = shoppingCart.ShoppingCartItems
-                    .Where(item => item.Status == "available")
+                    .Where(item => item.Product.Status == "available")
                     .ToList();
 
                 if (!availableItems.Any())
@@ -421,6 +421,7 @@ namespace PototoTrade.Service.Product
             }
             catch (Exception ex)
             {
+                 Console.Error.WriteLine($"Error fetching rebate amount list: {ex}");
                 Console.Error.WriteLine($"Error fetching rebate amount list: {ex.Message}");
                 return new ResponseModel<T>
                 {
@@ -626,6 +627,7 @@ namespace PototoTrade.Service.Product
                         var productUrl = media?.MediaUrl;
                         return new BuyerItemDTO
                         {
+                            ProductId = item.ProductId,
                             ProductName = item.Product.Title,
                             ProductPrice = item.Product.Price,
                             ProductUrl = productUrl,
@@ -700,6 +702,7 @@ namespace PototoTrade.Service.Product
 
                         return new BuyerItemDTO
                         {
+                            ProductId = item.ProductId,
                             ProductName = item.Product.Title,
                             ProductPrice = item.Product.Price,
                             ProductUrl = productUrl,
