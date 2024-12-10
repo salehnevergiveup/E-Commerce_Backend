@@ -116,6 +116,12 @@ namespace PotatoTrade.Repository.Notification
         ).ToListAsync();
         }
 
+        // public async Task<List<UserNotification>> MarkAllNotificationsAsRead(int userId, UserNotification userNotifications)
+        // {
+        //     return await
+        // }
+
+
     }
 }
 

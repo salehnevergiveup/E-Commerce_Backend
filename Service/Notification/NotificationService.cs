@@ -161,6 +161,46 @@ namespace PotatoTrade.Service.Notification{
             return response;
         }
 
+        public async Task<ResponseModel<List<UserNotificationWithMetadataDTO?>>> MarkAllNotificationsAsRead(ClaimsPrincipal userClaims)
+        {
+             var response = new ResponseModel<List<UserNotificationWithMetadataDTO?>>
+            {
+                Success = false,
+                Data = null,
+                Message = "Failed to retrieve notifications."
+            };
+
+            try
+            {
+                var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
+                    if (userId == 0)
+                    {
+                        response.Message = "Invalid or missing user ID in claims";
+                        return response;
+                    }
+                // Call the repository to fetch notifications
+                var notifications = await _notificationRepository.GetNotificationsForUserAsync(userId);
+
+                if (notifications != null && notifications.Any())
+                {
+                    response.Success = true;
+                    response.Data = notifications;
+                    response.Message = "Notifications retrieved successfully.";
+                    Console.WriteLine(response.Data);
+                }
+                else
+                {
+                    response.Message = "No notifications found for the user.";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Message = $"An error occurred while retrieving notifications: {ex.Message}";
+            }
+
+            return response;
+        }
+
         }
 
 

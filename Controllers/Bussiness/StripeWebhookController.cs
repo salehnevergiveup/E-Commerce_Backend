@@ -109,5 +109,57 @@ namespace PototoTrade.Controllers
                 return StatusCode(500);
             }
         }
+        // [HttpGet("verify-session")]
+        // public async Task<IActionResult> VerifySession([FromQuery] string session_id)
+        // {
+        //     if (string.IsNullOrEmpty(session_id))
+        //     {
+        //         return BadRequest(new { status = "error", message = "Session ID is required." });
+        //     }
+
+        //     try
+        //     {
+        //         var service = new SessionService();
+        //         var session = await service.GetAsync(session_id);
+        //         Console.WriteLine($"Received session_id: {session_id}");
+
+        //         if (session.PaymentStatus == "paid")
+        //         {
+        //                 Console.WriteLine($"Received session_id post paid: {session_id}");
+
+        //             if (session.Metadata == null || !session.Metadata.ContainsKey("userId"))
+        //             {
+        //                 Console.WriteLine("Metadata is missing or userId is not present.");
+        //                 return BadRequest(new { status = "error", message = "Invalid session metadata." });
+        //             }
+
+        //             var response = new
+        //             {
+        //                 status = "success",
+        //                 sessionId = session.Id,
+        //                 userId = session.Metadata["userId"],
+        //                 amount = session.AmountTotal.HasValue ? (decimal)session.AmountTotal.Value / 100 : 0,
+        //             };
+        //             return Ok(response);
+        //         }
+
+        //         return Ok(new { status = "failed", message = "Payment not completed." });
+        //     }
+        //     catch (StripeException e)
+        //     {
+        //         Console.WriteLine($"Stripe exception: {e.Message}");
+        //         return BadRequest(new { status = "error", message = e.Message });
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         Console.WriteLine($"Unexpected exception: {e.Message}");
+        //         return StatusCode(500, new { status = "error", message = "Internal Server Error" });
+        //     }
+        // }
     }
 }
+
+    
+
+    
+

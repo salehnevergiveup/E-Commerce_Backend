@@ -150,7 +150,7 @@ public class SystemInti : Seeder
 
     public override void seed()
     {
-        this.SeedSuperAdmin();
+        this.SeedRoles().SeedSuperAdmin();
 
     }
 }

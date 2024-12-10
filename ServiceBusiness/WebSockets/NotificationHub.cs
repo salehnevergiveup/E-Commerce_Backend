@@ -25,10 +25,10 @@ public class NotificationHub : Hub
 
         if (userId != 0)
         {
-            // Add user to individual group
+            //add user to individual group
             await Groups.AddToGroupAsync(Context.ConnectionId, $"User-{userId}");
-            // Add user to role-specific group
-            if (userRole == "3") // Assuming "3" represents RoleId for regular users
+            //add user to role-specific group
+            if (userRole == "3") 
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, "Users");
             }
@@ -57,10 +57,10 @@ public class NotificationHub : Hub
 
             if (!string.IsNullOrEmpty(userId))
             {
-                // Remove user from individual group
+                //remove user from individual group
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"User-{userId}");
 
-                // Remove user from role-specific group
+                //remove user from role-specific group
                 if (userRole == "3")
                 {
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Users");
