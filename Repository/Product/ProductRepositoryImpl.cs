@@ -29,7 +29,7 @@ public class ProductRepositoryImpl : ProductRepository
     public async Task<bool> CategoryExists(string categoryName)
     {
         return await _context.ProductCategories
-            .AnyAsync(c => c.ProductCategoryName.Equals(categoryName, StringComparison.OrdinalIgnoreCase));
+            .AnyAsync(c => c.ProductCategoryName.ToLower() == categoryName.ToLower());
     }
 
     // Create a new product category

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PototoTrade.Controllers.CustomerController;
+using PototoTrade.Controllers.CustomController;
 using PototoTrade.DTO.Common;
 using PototoTrade.DTO.Product;
 using PototoTrade.Service.Product;
@@ -9,7 +9,7 @@ namespace PototoTrade.Controllers.Product
 {
     [Route("api/product/public")]
     [ApiController]
-    public class PublicProductController : CustomerBaseController
+    public class PublicProductController : CustomBaseController
     {
         private readonly ProductSrv _productService;
 
