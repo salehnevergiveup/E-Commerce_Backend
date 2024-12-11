@@ -101,6 +101,12 @@ namespace PototoTrade.Controllers.Product
             return Ok(await _productService.GetUserProductsByStatus<ProductResponseDTO>("available", User));
         }
 
+        [HttpGet("get-not-available-product")]
+        public async Task<IActionResult> GetNotAvailableProducts()
+        {
+            return Ok(await _productService.GetUserProductsByStatus<ProductResponseDTO>("not available", User));
+        }
+
         [HttpGet("get-sold-out-product")]
         public async Task<IActionResult> GetSoldOutProducts()
         {

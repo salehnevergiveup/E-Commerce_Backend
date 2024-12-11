@@ -5,6 +5,8 @@ public class ProductDetailsDTO
     public string Description { get; set; }
     public decimal Price { get; set; }
     public int RefundGuaranteedDuration { get; set; }
+
+    public string ProductCategoryName { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public int UserId { get; set; }
     public string UserName { get; set; } // From UserAccount

@@ -106,5 +106,17 @@ public class ProductRepositoryImpl : ProductRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task<ProductCategory?> GetProductCategoryByProductIdAsync(int productId)
+    {
+        // Fetch the category using the product ID
+        var productCategory = await _context.Products
+            .Where(p => p.Id == productId)
+            .Include(p => p.Category) // Ensure Category navigation is loaded
+            .Select(p => p.Category) // Select the Category from the product
+            .FirstOrDefaultAsync();
+
+        return productCategory;
+    }
+
 
 }

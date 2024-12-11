@@ -324,7 +324,7 @@ namespace PototoTrade.Service.Product
                 await _buyerItemRepository.RemoveBuyerItem(buyerItem);
 
                 await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrder);
-                
+
 
                 return new ResponseModel<T>
                 {
@@ -370,17 +370,34 @@ namespace PototoTrade.Service.Product
                     );
                 }
 
+                if (purchaseOrder.BuyerItems == null || !purchaseOrder.BuyerItems.Any())
+                {
+                    throw new CustomException<GeneralMessageDTO>(
+                        ExceptionEnum.GetException("PURCHASE_ORDER_ITEMS_NOT_FOUND")
+                    );
+                }
+
                 var rebateItems = new List<RebateAmountDTO>();
                 decimal totalDiscountedPrice = 0;
 
                 foreach (var buyerItem in purchaseOrder.BuyerItems)
                 {
                     var product = buyerItem.Product;
-                    var category = product.Category;
+                    var category = await _productRepository.GetProductCategoryByProductIdAsync(product.Id);
+                    if (product == null)
+                    {
+                        throw new Exception($"BuyerItem {buyerItem.Id} has no associated product.");
+                    }
+
+                    if (category == null)
+                    {
+                        throw new Exception($"Product {product.Id} has no associated category.");
+                    }
 
                     var rebateRate = (decimal)category.RebateRate;
                     var discountedPrice = product.Price - (product.Price * rebateRate);
                     var deliveryCost = product.Price * 0.05m;
+
                     rebateItems.Add(new RebateAmountDTO
                     {
                         ProductName = product.Title,
@@ -421,7 +438,7 @@ namespace PototoTrade.Service.Product
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error fetching rebate amount list: {ex.Message}");
+                Console.Error.WriteLine($"Error fetching rebate amount list: {ex}");
                 return new ResponseModel<T>
                 {
                     Success = false,
@@ -431,6 +448,7 @@ namespace PototoTrade.Service.Product
                 };
             }
         }
+
 
         public async Task<ResponseModel<T>> MakePayment<T>(MakePaymentRequestDTO paymentRequest, ClaimsPrincipal userClaims)
         {
@@ -476,8 +494,16 @@ namespace PototoTrade.Service.Product
                     buyerItem.Product.Status = "sold out";
                     await _productRepository.UpdateProduct(buyerItem.Product);
 
+                    var product = buyerItem.Product;
+
                     var adminWallet = await _walletRepository.GetPlatformWallet();
-                    decimal rebateAmount = buyerItem.Product.Price * (decimal)buyerItem.Product.Category.RebateRate;
+                    var category = await _productRepository.GetProductCategoryByProductIdAsync(product.Id);
+
+                    if (category == null)
+                    {
+                        throw new Exception($"Product {product.Id} has no associated category.");
+                    }
+                    decimal rebateAmount = buyerItem.Product.Price * (decimal)category.RebateRate;
 
 
                     adminWallet.AvailableBalance = adminWallet.AvailableBalance - rebateAmount + item.DeliveryFee;
@@ -599,19 +625,21 @@ namespace PototoTrade.Service.Product
             {
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
 
+                // Fetch the pending order
                 var pendingOrder = await _purchaseOrderRepository.GetPendingOrderByUserId(userId);
                 if (pendingOrder == null)
                 {
-                    throw new CustomException<GeneralMessageDTO>(
-                        ExceptionEnum.GetException("PURCHASE_ORDER_NOT_FOUND"),
-                        new GeneralMessageDTO
-                        {
-                            Message = "No pending purchase order found.",
-                            Success = false
-                        }
-                    );
+                    // Handle when no pending order is found
+                    return new ResponseModel<T>
+                    {
+                        Success = false,
+                        Code = "404",
+                        Message = "No pending purchase order found.",
+                        Data = default // Explicitly return default for type T
+                    };
                 }
 
+                // Map the pending order to PurchaseOrderDTO
                 var responseDTO = new PurchaseOrderDTO
                 {
                     PurchaseOrderId = pendingOrder.Id,
@@ -629,30 +657,19 @@ namespace PototoTrade.Service.Product
                             ProductName = item.Product.Title,
                             ProductPrice = item.Product.Price,
                             ProductUrl = productUrl,
-                            ProductOwner = item.Product.User.Name,
+                            ProductOwner = item.Product.User?.Name ?? "Unknown",
                             BuyerItemStatus = item.Status
                         };
                     }))).ToList()
-
                 };
 
+                // Return the mapped DTO
                 return new ResponseModel<T>
                 {
                     Success = true,
                     Code = "200",
                     Message = "Pending purchase order fetched successfully.",
-                    Data = (T)(object)responseDTO
-                };
-            }
-            catch (CustomException<GeneralMessageDTO> customEx)
-            {
-                Console.Error.WriteLine($"CustomException: {customEx.Response.Message}");
-                return new ResponseModel<T>
-                {
-                    Success = customEx.Response.Success,
-                    Code = customEx.Response.Code,
-                    Message = customEx.Response.Message,
-                    Data = customEx.Response.Data == null ? default(T)! : (T)(object)customEx.Response.Data
+                    Data = (T)(object)responseDTO // Cast to generic type T
                 };
             }
             catch (Exception ex)
@@ -663,10 +680,11 @@ namespace PototoTrade.Service.Product
                     Success = false,
                     Code = "500",
                     Message = "An error occurred while fetching the pending purchase order.",
-                    Data = default
+                    Data = default // Ensure consistent type handling
                 };
             }
         }
+
 
         public async Task<ResponseModel<T>> ViewPurchaseOrderItems<T>(int purchaseOrderId)
         {
@@ -805,33 +823,35 @@ namespace PototoTrade.Service.Product
             {
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
                 var buyerItem = await _buyerItemRepository.GetBuyerItemById(refundDto.BuyerItemId);
+                var order = await _purchaseOrderRepository.GetPurchaseOrderById(buyerItem.OrderId);
+
+                if (buyerItem == null)
+                {
+                    throw new Exception($"BuyerItem with ID {refundDto.BuyerItemId} not found.");
+                }
+                if (buyerItem.Product == null)
+                {
+                    throw new Exception($"Product associated with BuyerItem ID {refundDto.BuyerItemId} is null.");
+                }
+                if (order == null)
+                {
+                    throw new Exception($"Order associated with BuyerItem ID {refundDto.BuyerItemId} is null.");
+                }
 
                 var product = buyerItem.Product;
-
-                int whoIsBeingRejected;
-                if (userId == buyerItem.Product.UserId)
-                {
-                    whoIsBeingRejected = buyerItem.Order.UserId;
-                }
-                else
-                {
-                    whoIsBeingRejected = buyerItem.Product.UserId;
-                }
+                int whoIsBeingRejected = userId == product.UserId ? order.UserId : product.UserId;
 
                 buyerItem.Status = "received";
                 buyerItem.UpdatedAt = DateTime.UtcNow;
                 await _buyerItemRepository.UpdateBuyerItem(buyerItem);
+
                 product.Status = "sold out";
                 product.UpdatedAt = DateTime.UtcNow;
                 await _productRepository.UpdateProduct(product);
 
-                string rejectedMessage = (whoIsBeingRejected == buyerItem.Order.UserId)
-               ? $"Refund request for product '{product.Title}' was rejected by the Buyer."
-               : $"Refund request for product '{product.Title}' was rejected by the Product Owner.";
-
-                string responseMessage = (whoIsBeingRejected == buyerItem.Order.UserId)
-                ?$"{product.Title} refund request has been cancelled."
-                : $"{product.Title} refund request has been rejected.";
+                string responseMessage = whoIsBeingRejected == buyerItem.Order.UserId
+                    ? $"{product.Title} refund request has been cancelled by the Product Owner."
+                    : $"{product.Title} refund request has been rejected by the Buyer.";
 
                 return new ResponseModel<T>
                 {
@@ -840,20 +860,9 @@ namespace PototoTrade.Service.Product
                     Message = responseMessage,
                     Data = (T)(object)new GeneralMessageDTO
                     {
-                        Message = $"{product.Title} refund request has been rejected successfully.",
+                        Message = responseMessage,
                         Success = true
                     }
-                };
-            }
-            catch (CustomException<GeneralMessageDTO> customEx)
-            {
-                Console.Error.WriteLine($"CustomException: {customEx.Response.Message}");
-                return new ResponseModel<T>
-                {
-                    Success = customEx.Response.Success,
-                    Code = customEx.Response.Code,
-                    Message = customEx.Response.Message,
-                    Data = customEx.Response.Data == null ? default(T)! : (T)(object)customEx.Response.Data
                 };
             }
             catch (Exception ex)
@@ -868,7 +877,5 @@ namespace PototoTrade.Service.Product
                 };
             }
         }
-
-
     }
 }

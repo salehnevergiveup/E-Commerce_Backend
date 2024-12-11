@@ -2,6 +2,7 @@ using System;
 using System.Security.Claims;
 using PototoTrade.DTO.Common;
 using PototoTrade.DTO.Product;
+using PototoTrade.Models.BuyerItem;
 using PototoTrade.Models.Product;
 using PototoTrade.Repository.BuyerItem;
 using PototoTrade.Repository.MediaRepo;
@@ -264,6 +265,113 @@ namespace PototoTrade.Service.Product
                         Title = product.Title,
                         Description = product.Description,
                         Price = product.Price,
+                        ProductCategoryName = product.Category.ProductCategoryName,
+                        RefundGuaranteedDuration = product.RefundGuaranteedDuration,
+                        CreatedAt = product.CreatedAt,
+                        UserId = product.User.Id,
+                        UserName = product.User.Name,
+                        Media = mediaList
+                    });
+                }
+
+                return new ResponseModel<T>
+                {
+                    Success = true,
+                    Code = "200",
+                    Message = "Products retrieved successfully.",
+                    Data = default(T) ?? (T)(object)productList
+                };
+            }
+            catch (CustomException<GeneralMessageDTO> customEx)
+            {
+                Console.Error.WriteLine($"CustomException: {customEx.Response.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = customEx.Response.Success,
+                    Code = customEx.Response.Code,
+                    Message = customEx.Response.Message,
+                    Data = customEx.Response.Data == null ? default! : (T)(object)customEx.Response.Data
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error retrieving products for category ID {request.ProductCategoryId}: {ex.Message}");
+                return new ResponseModel<T>
+                {
+                    Success = false,
+                    Code = "500",
+                    Message = "An error occurred while retrieving products.",
+                    Data = default!
+                };
+            }
+        }
+
+        public async Task<ResponseModel<T>> ViewAvailableProductsByCategory<T>(ViewProductsRequestDTO request)
+        {
+            try
+            {
+                if (request.ProductCategoryId <= 0)
+                {
+                    return new ResponseModel<T>
+                    {
+                        Success = false,
+                        Code = "400",
+                        Message = "Invalid ProductCategoryId.",
+                        Data = default
+                    };
+                }
+
+                var productCategory = await _productRepository.GetCategoryById(request.ProductCategoryId);
+                if (productCategory == null)
+                {
+                    throw new CustomException<GeneralMessageDTO>(ExceptionEnum.GetException("PRODUCT_CATEGORY_NOT_FOUND"));
+                }
+                var products = await _productRepository.GetProductsByCategoryId(request.ProductCategoryId);
+
+                if (products == null || !products.Any())
+                {
+                    throw new CustomException<GeneralMessageDTO>(
+                        ExceptionEnum.GetException("PRODUCT_NOT_FOUND"),
+                        new GeneralMessageDTO
+                        {
+                            Message = $"The Category :{productCategory.ProductCategoryName} has no any product",
+                            Success = false
+                        }
+                    );
+                }
+
+                var productList = new List<ProductDetailsDTO>();
+
+                foreach (var product in products)
+                {
+                    if (product.Status != "available")
+                    {
+                        continue;
+                    }
+
+                    var mediaList = new List<MediaDTO>();
+
+                    if (product.MediaBoolean)
+                    {
+                        var media = await _mediaRepository.GetMediaListBySourceIdAndType(product.Id, "PRODUCT");
+                        mediaList = media != null && media.Any()
+                        ? media.Select(m => new MediaDTO
+                        {
+                            Id = m.Id,
+                            MediaUrl = m.MediaUrl,
+                            CreatedAt = m.CreatedAt,
+                            UpdatedAt = m.UpdatedAt
+                        }).ToList()
+                        : null;
+                    }
+
+                    productList.Add(new ProductDetailsDTO
+                    {
+                        ProductId = product.Id,
+                        Title = product.Title,
+                        Description = product.Description,
+                        Price = product.Price,
+                        ProductCategoryName = product.Category.ProductCategoryName,
                         RefundGuaranteedDuration = product.RefundGuaranteedDuration,
                         CreatedAt = product.CreatedAt,
                         UserId = product.User.Id,
@@ -529,9 +637,7 @@ namespace PototoTrade.Service.Product
             try
             {
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-
                 var products = await _productRepository.GetProductsByStatusAndUserId(status, userId);
-
                 if (products == null || !products.Any())
                 {
                     return new ResponseModel<List<T>>
@@ -542,35 +648,19 @@ namespace PototoTrade.Service.Product
                         Data = new List<T>()
                     };
                 }
+                var productDetails = new List<ProductResponseDTO>();
 
-                var productDetails = await Task.WhenAll(products.Select(async product =>
+                foreach (var product in products)
                 {
                     var productUrl = product.MediaBoolean
                         ? (await _mediaService.GetFirstMediaBySourceIdAndType(product.Id, "PRODUCT"))?.MediaUrl
                         : null;
+
                     var latestBuyerItem = await _buyerItemRepository.GetLatestBuyerItemByProductId(product.Id);
 
-                    string paymentStatus = "none";
-                    if (status == "available")
-                    {
-                        if (latestBuyerItem != null)
-                        {
-                            paymentStatus = latestBuyerItem.Status == "pending" ? "order placed" : "none";
-                        }
-                    }
-                    else if (status == "sold out")
-                    {
-                        if (latestBuyerItem != null && latestBuyerItem.ValidRefundDate != null)
-                        {
-                            paymentStatus = DateOnly.FromDateTime(DateTime.UtcNow) <= latestBuyerItem.ValidRefundDate ? "on hold" : "payment done";
-                        }
-                    }
-                    else if (status == "request refund")
-                    {
-                        paymentStatus = "processing refund";
-                    }
+                    string paymentStatus = DeterminePaymentStatus(status, latestBuyerItem);
 
-                    return new ProductResponseDTO
+                    productDetails.Add(new ProductResponseDTO
                     {
                         ProductId = product.Id,
                         CategoryId = product.CategoryId,
@@ -579,9 +669,8 @@ namespace PototoTrade.Service.Product
                         ProductStatus = product.Status,
                         ProductPaymentStatus = paymentStatus,
                         MediaUrl = productUrl
-                    };
-                }));
-
+                    });
+                }
                 return new ResponseModel<List<T>>
                 {
                     Success = true,
@@ -601,6 +690,18 @@ namespace PototoTrade.Service.Product
                     Data = default
                 };
             }
+        }
+
+        private string DeterminePaymentStatus(string status, BuyerItems latestBuyerItem)
+        {
+            return status switch
+            {
+                "available" => latestBuyerItem?.Status == "pending" ? "order placed" : "none",
+                "sold out" => latestBuyerItem != null && latestBuyerItem.ValidRefundDate != null &&
+                               DateOnly.FromDateTime(DateTime.UtcNow) <= latestBuyerItem.ValidRefundDate ? "on hold" : "payment done",
+                "request refund" => "processing refund",
+                _ => "none"
+            };
         }
 
         public async Task<ResponseModel<T>> ViewProductDetails<T>(int productId, ClaimsPrincipal userClaims)

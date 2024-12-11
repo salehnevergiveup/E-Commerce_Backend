@@ -24,5 +24,6 @@ public interface ProductRepository
 
     Task<Products?> GetProductById(int productId);
 
+    Task<ProductCategory?> GetProductCategoryByProductIdAsync(int productId);
 
 }
