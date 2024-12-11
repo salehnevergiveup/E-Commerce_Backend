@@ -48,6 +48,7 @@ namespace PotatoTrade.Repository.Notification
                     NotificationId = notificationId,
                     IsRead = false,
                     ReceivedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 }).ToList();
 
                 await _context.UserNotification.AddRangeAsync(userNotifications);
@@ -114,6 +115,70 @@ namespace PotatoTrade.Repository.Notification
                 UpdatedAt = userNotification.UpdatedAt
             }
         ).ToListAsync();
+        }
+
+        public async Task<List<UserNotification>> GetUnreadNotificationsForUserAsync(int userId)
+        {
+            var unreadNotifications = await _context.UserNotification
+        .Where(n => n.UserId == userId && !n.IsRead)
+        .ToListAsync();
+
+        // Log the fetched notifications
+        Console.WriteLine($"Fetched {unreadNotifications.Count} unread notifications for user ID: {userId}");
+        foreach (var notification in unreadNotifications)
+        {
+            Console.WriteLine($"Notification ID: {notification.NotificationId}, IsRead: {notification.IsRead}, UserID: {notification.UserId}");
+        }
+
+        return unreadNotifications;
+        }
+
+        public async Task<int> MarkAllNotificationsAsReadAsync(List<UserNotification> notifications)
+        {
+            try{
+            foreach (var notification in notifications)
+            {
+                notification.IsRead = true;
+                notification.UpdatedAt = DateTime.UtcNow; // Update the timestamp
+            }
+
+            return await _context.SaveChangesAsync(); // Return the number of rows updated
+            }catch (Exception e){
+                Console.WriteLine("Mark notifications as read error" + e);
+                return 0;
+            }
+        }
+
+        public async Task<List<NotificationDTO>> GetAllNotificationsForAdmin(){
+             try
+    {
+        // Fetch notifications along with the read/unread counts
+        var notifications = await (
+            from notification in _context.Notifications
+            join userNotification in _context.UserNotification
+            on notification.Id equals userNotification.NotificationId into userNotificationsGroup
+            select new NotificationDTO
+            {
+                SenderUsername = notification.SenderUsername,
+                ReceiverUsername = null, // Admins do not need receiver info
+                Type = notification.Type,
+                Title = notification.Title,
+                MessageText = notification.MessageText,
+                CreatedAt = notification.CreatedAt,
+                Status = notification.Status,
+                // Aggregate read/unread counts
+                ReadCount = userNotificationsGroup.Count(ur => ur.IsRead),
+                TotalCount = userNotificationsGroup.Count()
+            }
+        ).OrderByDescending(n => n.CreatedAt).ToListAsync();
+
+        return notifications;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching notifications for admin: {ex.Message}");
+            return new List<NotificationDTO>();
+        }
         }
 
         // public async Task<List<UserNotification>> MarkAllNotificationsAsRead(int userId, UserNotification userNotifications)

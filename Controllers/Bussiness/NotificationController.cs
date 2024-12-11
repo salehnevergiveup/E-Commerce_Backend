@@ -20,21 +20,21 @@ namespace PotatoTrade.Controllers.Bussiness{
 
         [HttpPost("users/broadcast")]
         [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> BroadcastNotificationToUsers([FromBody] NotificationDTO notificationDTO)
+        public async Task<IActionResult> BroadcastNotificationToUsers([FromBody] SendNotificationDTO sendNotificationDTO)
         {
-            var responseObject = await _notificationService.CreateBroadcastNotificationWithUserNotifications(User, notificationDTO.Title, notificationDTO.MessageText);
+            var responseObject = await _notificationService.CreateBroadcastNotificationWithUserNotifications(User, sendNotificationDTO.SenderUsername, sendNotificationDTO.Title, sendNotificationDTO.MessageText);
             if (!responseObject.Success)
             {
                 return BadRequest(responseObject.Message);
             }
             await _notificationHubContext.Clients.Group("Users").SendAsync("ReceiveNotification", responseObject.Data);
 
-            return Ok(new { message = "Notification broadcasted successfully" });        
+            return Ok(responseObject.Success);        
         }
 
         [HttpGet("users/all")]
         [Authorize(Roles = "User")]
-        public async Task<IActionResult> FetchAllNotifications()
+        public async Task<IActionResult> FetchAllNotificationsForUsers()
         {
            return MakeResponse(await _notificationService.GetUserNotificationsAsync(User));
             // if (!responseObject.Success)
@@ -46,12 +46,27 @@ namespace PotatoTrade.Controllers.Bussiness{
             //     data = responseObject.Data 
             // });    
         }
-        // [HttpGet("users/update_notifications")]
-        // [Authorize(Roles = "User")]
-        // public async Task<IActionResult> MarkAllNotificationsAsRead()
-        // {
-            
-        // }
+
+        
+        [HttpGet("all")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        public async Task<IActionResult> FetchAllNotificationsForAdmin(){
+            return MakeResponse(await _notificationService.GetNotificationsForAdminAsync());
+        }
+
+        [HttpPost("users/update_notifications")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> MarkAllNotificationsAsRead()
+        {
+            var responseObject = await _notificationService.MarkAllNotificationsAsRead(User);
+            if (!responseObject.Success)
+            {
+                return BadRequest(responseObject.Message);
+            }
+            await _notificationHubContext.Clients.Group("Users").SendAsync("ReceiveNotification", responseObject.Data);
+
+            return Ok();                
+            }
 
     }
 

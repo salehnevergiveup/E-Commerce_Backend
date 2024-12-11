@@ -1,8 +1,8 @@
 namespace PotatoTrade.DTO.Notification{
     public class NotificationDTO
     {
-        public int UserId { get; set; }
-        public int ReceiverId {get; set;}
+        public string SenderUsername {get; set;} = null!;
+        public string ReceiverUsername {get; set;} = null!;
 
         public string Type {get; set;} = "broadcast";
         public string Title { get; set; } = null!;
@@ -11,7 +11,10 @@ namespace PotatoTrade.DTO.Notification{
 
         public DateTime CreatedAt { get; set; }
 
-        public string Status { get; set; } = "unread";
+        public string Status { get; set; } = "sent";
+
+        public int ReadCount {get; set;}
+        public int TotalCount {get; set;}
 
     }
 

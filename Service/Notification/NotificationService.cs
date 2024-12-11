@@ -64,7 +64,7 @@ namespace PotatoTrade.Service.Notification{
         return response;
         }
 
-        public async Task<ResponseModel<Notifications>> CreateBroadcastNotificationWithUserNotifications(ClaimsPrincipal userClaims, string title, string message)
+        public async Task<ResponseModel<Notifications>> CreateBroadcastNotificationWithUserNotifications(ClaimsPrincipal userClaims, string senderUsername, string title, string message)
         {
             var response = new ResponseModel<Notifications>
             {
@@ -85,7 +85,7 @@ namespace PotatoTrade.Service.Notification{
                         return response;
                     }
 
-                    var senderUsername = await _userAccountRepository.GetUsernameByUserIdAsync(userId);
+                    //var senderUsername = await _userAccountRepository.GetUsernameByUserIdAsync(userId);
 
                     var broadcastMsg = new Notifications
                     {
@@ -161,48 +161,129 @@ namespace PotatoTrade.Service.Notification{
             return response;
         }
 
-        public async Task<ResponseModel<List<UserNotificationWithMetadataDTO?>>> MarkAllNotificationsAsRead(ClaimsPrincipal userClaims)
+        public async Task<ResponseModel<List<UserNotificationWithMetadataDTO>>> MarkAllNotificationsAsRead(ClaimsPrincipal userClaims)
         {
-             var response = new ResponseModel<List<UserNotificationWithMetadataDTO?>>
+            var response = new ResponseModel<List<UserNotificationWithMetadataDTO>>
             {
                 Success = false,
                 Data = null,
-                Message = "Failed to retrieve notifications."
+                Message = "Failed to mark all notifications as read."
             };
 
             try
             {
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-                    if (userId == 0)
+                 if (userId == 0)
                     {
                         response.Message = "Invalid or missing user ID in claims";
                         return response;
                     }
-                // Call the repository to fetch notifications
-                var notifications = await _notificationRepository.GetNotificationsForUserAsync(userId);
 
-                if (notifications != null && notifications.Any())
+                
+                // Fetch unread notifications
+                Console.WriteLine($"Fetching unread notifications for userId: {userId}");
+                var unreadNotifications = await _notificationRepository.GetUnreadNotificationsForUserAsync(userId);
+
+                // Log the fetched notifications
+                if (unreadNotifications == null)
                 {
+                    Console.WriteLine("Unread notifications returned null.");
+                    response.Message = "Unread notifications returned null.";
+                    response.Data = null;
                     response.Success = true;
-                    response.Data = notifications;
-                    response.Message = "Notifications retrieved successfully.";
-                    Console.WriteLine(response.Data);
+                    return response;
                 }
-                else
+                Console.WriteLine($"Number of unread notifications fetched: {unreadNotifications.Count}");
+
+                if (!unreadNotifications.Any())
                 {
-                    response.Message = "No notifications found for the user.";
+                    response.Message = "No unread notifications found.";
+                    response.Success = true; // No errors but nothing to update
+                    response.Data = null;
+                    Console.WriteLine("No unread notifications found.");
+                    return response;
                 }
+
+                // Mark all notifications as read
+                Console.WriteLine("Marking all notifications as read.");
+                var updatedCount = await _notificationRepository.MarkAllNotificationsAsReadAsync(unreadNotifications);
+
+                Console.WriteLine($"Number of notifications marked as read: {updatedCount}");
+
+                // Prepare response data (convert to DTOs)
+                Console.WriteLine("Preparing response data.");
+                response.Data = unreadNotifications
+                    .Select(n => new UserNotificationWithMetadataDTO
+                    {
+                        NotificationId = n.NotificationId,
+                        IsRead = n.IsRead,
+                        UpdatedAt = n.UpdatedAt,
+                        // Include other fields as needed
+                    })
+                    .ToList();
+
+                response.Success = true;
+                response.Message = $"{updatedCount} notifications marked as read.";
+                Console.WriteLine("MarkAllNotificationsAsRead completed successfully.");
             }
             catch (Exception ex)
             {
-                response.Message = $"An error occurred while retrieving notifications: {ex.Message}";
+                response.Message = $"An error occurred: {ex.Message}";
+                Console.WriteLine($"Exception: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
             }
 
             return response;
         }
 
+        public async Task<ResponseModel<List<NotificationDTO>>> GetNotificationsForAdminAsync()
+        {
+            var response = new ResponseModel<List<NotificationDTO>>
+            {
+                Success = false,
+                Data = null,
+                Message = "Failed to fetch notifications."
+            };
+
+            try
+            {
+                var notifications = await _notificationRepository.GetAllNotificationsForAdmin();
+                response.Success = true;
+                response.Data = notifications;
+                response.Message = "Notifications fetched successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Message = $"An error occurred: {ex.Message}";
+            }
+
+            return response;
         }
+
+        // public async Task<ResponseModel<Notifications>> RemindAdminToChangePassword()
+        // {
+        //     var response = new ResponseModel<List<Notifications>>
+        //     {
+        //         Success = false,
+        //         Data = null,
+        //         Message = "Failed to remind admin."
+        //     };
+        //     try{
+
+
+        //     }catch (Exception ex){
+        //         response.Message = $"An error occurred: {ex.Message}";
+        //     }
+
+        // }
+
+
+    }
 
 
         
-    }
+}
