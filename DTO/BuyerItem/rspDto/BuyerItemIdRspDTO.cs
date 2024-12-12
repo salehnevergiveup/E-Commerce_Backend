@@ -1,4 +1,4 @@
-public class RefundDTO
+public class BuyerItemIdResponseDTO
 {
     public int BuyerItemId { get; set; }
 }

@@ -22,5 +22,7 @@ public interface BuyerItemRepository
 
     Task<BuyerItems?> GetLatestBuyerItemByProductId(int productId);
 
+    Task<BuyerItems?> GetBuyerItemByProductIdAndStatus(int productId , string status);
+
 
 }

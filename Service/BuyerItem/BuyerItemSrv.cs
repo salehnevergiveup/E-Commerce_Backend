@@ -28,8 +28,8 @@ namespace PototoTrade.Service.BuyerItem
 
         private readonly WalletTransactionRepository _walletTransactionRepository;
 
-        public BuyerItemService(BuyerItemRepository buyerItemRepository, ProductRepository productRepository, 
-        MediaSrv mediaService,OnHoldingPaymentHistoryRepository onHoldingPaymentHistoryRepository, WalletRepository walletRepository,
+        public BuyerItemService(BuyerItemRepository buyerItemRepository, ProductRepository productRepository,
+        MediaSrv mediaService, OnHoldingPaymentHistoryRepository onHoldingPaymentHistoryRepository, WalletRepository walletRepository,
         WalletTransactionRepository walletTransactionRepository)
         {
             _buyerItemRepository = buyerItemRepository;
@@ -44,9 +44,9 @@ namespace PototoTrade.Service.BuyerItem
         {
             try
             {
-
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
                 var buyerItems = await _buyerItemRepository.GetBuyerItemsByStatusAndUserId(status, userId);
+
                 if (buyerItems == null || !buyerItems.Any())
                 {
                     return new ResponseModel<List<T>>
@@ -58,11 +58,30 @@ namespace PototoTrade.Service.BuyerItem
                     };
                 }
 
-                var buyerItemDetails = await Task.WhenAll(buyerItems.Select(async item =>
+                var buyerItemDetails = new List<BuyerItemDetailsDTO>();
+
+                foreach (var item in buyerItems)
                 {
                     var productUrl = item.Product.MediaBoolean
                         ? (await _mediaService.GetFirstMediaBySourceIdAndType(item.Product.Id, "PRODUCT"))?.MediaUrl
                         : null;
+
+                    bool isRefundable = item.Product.RefundGuaranteedDuration > 0;
+                    int remainingRefundDays = 0;
+
+                    if (isRefundable && item.ValidRefundDate.HasValue)
+                    {
+                        var currentDate = DateTime.UtcNow.Date;
+                        var validRefundDate = item.ValidRefundDate.Value.ToDateTime(TimeOnly.MinValue);
+                        if (validRefundDate < currentDate)
+                        {
+                            isRefundable = false;
+                        }
+                        else
+                        {
+                            remainingRefundDays = (validRefundDate - currentDate).Days;
+                        }
+                    }
 
                     var deliveries = item.BuyerItemDeliveries.Select(delivery => new BuyerItemDeliveryDTO
                     {
@@ -71,7 +90,7 @@ namespace PototoTrade.Service.BuyerItem
                         StageDate = delivery.StageDate
                     }).ToList();
 
-                    return new BuyerItemDetailsDTO
+                    buyerItemDetails.Add(new BuyerItemDetailsDTO
                     {
                         PurchaseOrderId = item.OrderId,
                         BuyerItemId = item.Id,
@@ -80,10 +99,11 @@ namespace PototoTrade.Service.BuyerItem
                         ProductUrl = productUrl,
                         ProductOwner = item.Product.User.Name,
                         BuyerItemStatus = item.Status,
-                        RefundableBoolean = item.Product.RefundGuaranteedDuration > 0,
+                        RefundableBoolean = isRefundable,
+                        RemainingRefundDays = remainingRefundDays,
                         BuyerItemDelivery = deliveries
-                    };
-                }));
+                    });
+                }
 
                 return new ResponseModel<List<T>>
                 {
@@ -105,6 +125,7 @@ namespace PototoTrade.Service.BuyerItem
                 };
             }
         }
+
 
         public async Task<ResponseModel<List<T>>> ViewRefundItems<T>(ClaimsPrincipal userClaims)
         {
@@ -193,7 +214,7 @@ namespace PototoTrade.Service.BuyerItem
         }
 
 
-        public async Task<ResponseModel<T>> CreateDeliveryStage<T>(int buyerItemId, string stageType)
+        public async Task<ResponseModel<T>> CreateDeliveryStage<T>(int buyerItemId, string stageType, bool itemdelivered)
         {
             try
             {
@@ -203,7 +224,8 @@ namespace PototoTrade.Service.BuyerItem
                 {
                     throw new CustomException<GeneralMessageDTO>(ExceptionEnum.GetException("BUYER_ITEM_NOT_FOUND"));
                 }
-                var lastStage = buyerItem.BuyerItemDeliveries.OrderByDescending(d => d.StageDate).FirstOrDefault();
+                var lastStage = buyerItem.BuyerItemDeliveries.OrderByDescending(d => d.Id) .ThenByDescending(d => d.StageDate).FirstOrDefault();
+                Console.Error.WriteLine(lastStage);
                 if (lastStage != null)
                 {
                     if (!IsValidStageTransition(lastStage.StageTypes, stageType))
@@ -216,7 +238,7 @@ namespace PototoTrade.Service.BuyerItem
                     BuyerItemId = buyerItem.Id,
                     StageTypes = stageType,
                     StageDescription = $"{buyerItem.Product.Title} {stageType} at {DateTime.UtcNow}.",
-                    Status = "delivering",
+                    Status = itemdelivered ? "delivered" : "delivering",
                     StageDate = DateTime.UtcNow
                 };
 
@@ -275,7 +297,7 @@ namespace PototoTrade.Service.BuyerItem
         {
             try
             {
-                var response = await CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "item delivered");
+                var response = await CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "item delivered", true);
                 if (!response.Success)
                 {
                     return new ResponseModel<T>
@@ -397,7 +419,7 @@ namespace PototoTrade.Service.BuyerItem
                     );
                 }
 
-                if (buyerItem.Status != "done payment" || buyerItem.Product.RefundGuaranteedDuration <= 0)
+                if (buyerItem.Status != "received" || buyerItem.Product.RefundGuaranteedDuration <= 0)
                 {
                     throw new CustomException<GeneralMessageDTO>(
                         ExceptionEnum.GetException("ITEM_NOT_REFUNDABLE"),
@@ -469,7 +491,7 @@ namespace PototoTrade.Service.BuyerItem
                 {
                     if (item.ValidRefundDate.HasValue && item.ValidRefundDate.Value.ToDateTime(TimeOnly.MinValue) > DateTime.UtcNow)
                     {
-                        continue; 
+                        continue;
                     }
 
                     var sellerId = item.Product.UserId;
@@ -479,7 +501,7 @@ namespace PototoTrade.Service.BuyerItem
                     var existingPayment = await _onHoldingPaymentHistoryRepository.GetPaymentHistoryByDetails(buyerId, sellerId, productId);
                     if (existingPayment != null)
                     {
-                        continue; 
+                        continue;
                     }
 
                     var sellerWallet = await _walletRepository.GetWalletByUserIdAsync(sellerId);
@@ -506,7 +528,7 @@ namespace PototoTrade.Service.BuyerItem
                     };
                     await _onHoldingPaymentHistoryRepository.CreatePaymentHistory(paymentHistory);
 
-                   
+
                     var walletTransaction = new WalletTransaction
                     {
                         WalletId = sellerWallet.Id,

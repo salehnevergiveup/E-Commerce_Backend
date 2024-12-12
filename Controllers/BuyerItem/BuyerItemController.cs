@@ -42,19 +42,19 @@ namespace PototoTrade.Controllers.BuyerItem
         [HttpPost("create-stage/arrived-sorting-facility")]
         public async Task<IActionResult> CreateSortingFacilityStage([FromQuery] int buyerItemId)
         {
-            return MakeResponse(await _buyerItemService.CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "arrived in sorting facility"));
+            return MakeResponse(await _buyerItemService.CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "arrived in sorting facility",false));
         }
 
         [HttpPost("create-stage/arrived-delivery-hub")]
         public async Task<IActionResult> CreateDeliveryHubStage([FromQuery] int buyerItemId)
         {
-            return MakeResponse(await _buyerItemService.CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "arrived in sorting delivery hub"));
+            return MakeResponse(await _buyerItemService.CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "arrived in sorting delivery hub",false));
         }
 
         [HttpPost("create-stage/out-for-delivery")]
         public async Task<IActionResult> CreateOutForDeliveryStage([FromQuery] int buyerItemId)
         {
-            return MakeResponse(await _buyerItemService.CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "out of delivery"));
+            return MakeResponse(await _buyerItemService.CreateDeliveryStage<GeneralMessageDTO>(buyerItemId, "out of delivery",false));
         }
 
         [HttpPost("create-stage/item-delivered")]

@@ -103,5 +103,14 @@ public class BuyerItemRepositoryImpl : BuyerItemRepository
             .OrderByDescending(bi => bi.CreatedAt)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<BuyerItems?> GetBuyerItemByProductIdAndStatus(int productId, string status)
+    {
+
+        return await _context.BuyerItems
+            .Include(b => b.Product) // Include related entities if needed
+            .FirstOrDefaultAsync(b => b.ProductId == productId && b.Status == status);
+
+    }
 }
 
