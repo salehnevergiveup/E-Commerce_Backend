@@ -4,5 +4,7 @@ namespace PototoTrade.DTO.Wallet{
         public decimal AvailableBalance { get; set; }
 
         public decimal OnHoldBalance {get; set; }
+
+        public DateTime UpdatedAt {get; set;}
     }
 }

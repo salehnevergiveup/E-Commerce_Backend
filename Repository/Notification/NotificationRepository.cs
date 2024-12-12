@@ -11,6 +11,15 @@ namespace PotatoTrade.Repository.Notification{
         Task<List<UserNotificationWithMetadataDTO>> GetLatestNotificationsByUserId(int userId);
 
         Task<List<UserNotificationWithMetadataDTO>> GetNotificationsForUserAsync(int userId);
+        Task<List<UserNotification>> GetUnreadNotificationsForUserAsync(int userId);
+
+        Task<int> MarkAllNotificationsAsReadAsync(List<UserNotification> notifications);
+
+        Task<List<NotificationDTO>> GetAllNotificationsForAdmin();
+
+        //Task<List<SendNotificationDTO>> GetSendNotificationDTOByNotificationId(int notificationId);
+
+        //Task<List<UserNotification>> MarkAllNotificationsAsRead(int userId, UserNotification userNotifications);
 
         
 
