@@ -5,6 +5,7 @@ using PototoTrade.DTO.Product;
 using PototoTrade.Models.BuyerItem;
 using PototoTrade.Models.Media;
 using PototoTrade.Models.Product;
+using PototoTrade.Models.ShoppingCart;
 using PototoTrade.Models.User;
 using PototoTrade.Repository.BuyerItem;
 using PototoTrade.Repository.Cart;
@@ -155,18 +156,23 @@ namespace PototoTrade.Service.Product
             try
             {
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-                var userRole = userClaims.FindFirst(ClaimTypes.Role)?.Value;
 
+                // Retrieve shopping cart
                 var shoppingCart = await _shoppingCartRepository.GetShoppingCartByUserId(userId);
                 if (shoppingCart == null)
                 {
                     throw new CustomException<GeneralMessageDTO>(
-                        ExceptionEnum.GetException("CART_NOT_FOUND")
+                        ExceptionEnum.GetException("CART_NOT_FOUND"),
+                        new GeneralMessageDTO
+                        {
+                            Message = "Shopping cart not found.",
+                            Success = false
+                        }
                     );
                 }
 
                 var availableItems = shoppingCart.ShoppingCartItems
-                    .Where(item => item.Status == "available")
+                    .Where(item => item.Product.Status == "available")
                     .ToList();
 
                 if (!availableItems.Any())
@@ -181,35 +187,11 @@ namespace PototoTrade.Service.Product
                     );
                 }
 
+                // Check for an existing pending order
                 var pendingOrder = await _purchaseOrderRepository.GetPendingOrderByUserId(userId);
-
                 if (pendingOrder != null)
                 {
-                    foreach (var cartItem in availableItems)
-                    {
-                        cartItem.Product.Status = "not available";
-                        cartItem.Product.UpdatedAt = DateTime.UtcNow;
-                        await _productRepository.UpdateProduct(cartItem.Product);
-
-                        var buyerItem = new BuyerItems
-                        {
-                            OrderId = pendingOrder.Id,
-                            ProductId = cartItem.ProductId,
-                            BuyerId = userId,
-                            Status = "pending",
-                            ArrivedDate = null,
-                            ValidRefundDate = null,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow,
-                        };
-
-                        await _buyerItemRepository.CreateBuyerItem(buyerItem);
-                    }
-
-                    pendingOrder.TotalAmount += availableItems.Sum(item => item.Product.Price);
-                    await _purchaseOrderRepository.UpdatePurchaseOrder(pendingOrder);
-
-                    await _shoppingCartRepository.DeleteShoppingCartItems(availableItems);
+                    await AddItemsToPendingOrder(pendingOrder, availableItems, userId);
 
                     return new ResponseModel<T>
                     {
@@ -223,6 +205,8 @@ namespace PototoTrade.Service.Product
                         }
                     };
                 }
+
+                // Create a new order
                 var newOrder = new PurchaseOrder
                 {
                     UserId = userId,
@@ -234,27 +218,7 @@ namespace PototoTrade.Service.Product
 
                 var newOrderId = await _purchaseOrderRepository.CreatePurchaseOrder(newOrder);
 
-                foreach (var cartItem in availableItems)
-                {
-                    cartItem.Product.Status = "not available";
-                    cartItem.Product.UpdatedAt = DateTime.UtcNow;
-                    await _productRepository.UpdateProduct(cartItem.Product);
-
-                    var buyerItem = new BuyerItems
-                    {
-                        OrderId = newOrderId,
-                        ProductId = cartItem.ProductId,
-                        BuyerId = userId,
-                        Status = "pending",
-                        ArrivedDate = null,
-                        ValidRefundDate = null,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    await _buyerItemRepository.CreateBuyerItem(buyerItem);
-                }
-
-                await _shoppingCartRepository.DeleteShoppingCartItems(availableItems);
+                await AddItemsToNewOrder(newOrderId, availableItems, userId);
 
                 return new ResponseModel<T>
                 {
@@ -276,7 +240,7 @@ namespace PototoTrade.Service.Product
                     Success = customEx.Response.Success,
                     Code = customEx.Response.Code,
                     Message = customEx.Response.Message,
-                    Data = customEx.Response.Data == null ? default(T)! : (T)(object)customEx.Response.Data
+                    Data = default
                 };
             }
             catch (Exception ex)
@@ -291,6 +255,58 @@ namespace PototoTrade.Service.Product
                 };
             }
         }
+
+        // Helper method to handle adding items to an existing order
+        private async Task AddItemsToPendingOrder(PurchaseOrder pendingOrder, List<ShoppingCartItem> availableItems, int userId)
+        {
+            foreach (var cartItem in availableItems)
+            {
+                cartItem.Product.Status = "not available";
+                cartItem.Product.UpdatedAt = DateTime.UtcNow;
+                await _productRepository.UpdateProduct(cartItem.Product);
+
+                var buyerItem = new BuyerItems
+                {
+                    OrderId = pendingOrder.Id,
+                    ProductId = cartItem.ProductId,
+                    BuyerId = userId,
+                    Status = "pending",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await _buyerItemRepository.CreateBuyerItem(buyerItem);
+            }
+
+            pendingOrder.TotalAmount += availableItems.Sum(item => item.Product.Price);
+            await _purchaseOrderRepository.UpdatePurchaseOrder(pendingOrder);
+            await _shoppingCartRepository.DeleteShoppingCartItems(availableItems);
+        }
+
+        // Helper method to handle adding items to a new order
+        private async Task AddItemsToNewOrder(int newOrderId, List<ShoppingCartItem> availableItems, int userId)
+        {
+            foreach (var cartItem in availableItems)
+            {
+                cartItem.Product.Status = "not available";
+                cartItem.Product.UpdatedAt = DateTime.UtcNow;
+                await _productRepository.UpdateProduct(cartItem.Product);
+
+                var buyerItem = new BuyerItems
+                {
+                    OrderId = newOrderId,
+                    ProductId = cartItem.ProductId,
+                    BuyerId = userId,
+                    Status = "pending",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _buyerItemRepository.CreateBuyerItem(buyerItem);
+            }
+
+            await _shoppingCartRepository.DeleteShoppingCartItems(availableItems);
+        }
+
 
         public async Task<ResponseModel<T>> CancelItemInOrder<T>(CancelItemRequestDTO cancelItemRequest)
         {
@@ -850,8 +866,8 @@ namespace PototoTrade.Service.Product
                 await _productRepository.UpdateProduct(product);
 
                 string responseMessage = whoIsBeingRejected == buyerItem.Order.UserId
-                    ? $"{product.Title} refund request has been cancelled by the Product Owner."
-                    : $"{product.Title} refund request has been rejected by the Buyer.";
+                    ? $"{product.Title} refund request has been cancelled"
+                    : $"{product.Title} refund request has been rejected ";
 
                 return new ResponseModel<T>
                 {

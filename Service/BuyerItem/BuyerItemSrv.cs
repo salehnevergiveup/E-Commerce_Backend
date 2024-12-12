@@ -44,9 +44,9 @@ namespace PototoTrade.Service.BuyerItem
         {
             try
             {
-
                 var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
                 var buyerItems = await _buyerItemRepository.GetBuyerItemsByStatusAndUserId(status, userId);
+
                 if (buyerItems == null || !buyerItems.Any())
                 {
                     return new ResponseModel<List<T>>
@@ -58,7 +58,9 @@ namespace PototoTrade.Service.BuyerItem
                     };
                 }
 
-                var buyerItemDetails = await Task.WhenAll(buyerItems.Select(async item =>
+                var buyerItemDetails = new List<BuyerItemDetailsDTO>();
+
+                foreach (var item in buyerItems)
                 {
                     var productUrl = item.Product.MediaBoolean
                         ? (await _mediaService.GetFirstMediaBySourceIdAndType(item.Product.Id, "PRODUCT"))?.MediaUrl
@@ -67,11 +69,9 @@ namespace PototoTrade.Service.BuyerItem
                     bool isRefundable = item.Product.RefundGuaranteedDuration > 0;
                     int remainingRefundDays = 0;
 
-                    Console.WriteLine($"ValidRefundDate: {item.ValidRefundDate}, ArrivedDate: {item.ArrivedDate}");
                     if (isRefundable && item.ValidRefundDate.HasValue)
                     {
                         var currentDate = DateTime.UtcNow.Date;
-                        Console.WriteLine($"CurrentDate: {item.ArrivedDate}");
                         var validRefundDate = item.ValidRefundDate.Value.ToDateTime(TimeOnly.MinValue);
                         if (validRefundDate < currentDate)
                         {
@@ -80,8 +80,6 @@ namespace PototoTrade.Service.BuyerItem
                         else
                         {
                             remainingRefundDays = (validRefundDate - currentDate).Days;
-                            Console.WriteLine($"Remaining: {remainingRefundDays}");
-
                         }
                     }
 
@@ -92,7 +90,7 @@ namespace PototoTrade.Service.BuyerItem
                         StageDate = delivery.StageDate
                     }).ToList();
 
-                    return new BuyerItemDetailsDTO
+                    buyerItemDetails.Add(new BuyerItemDetailsDTO
                     {
                         PurchaseOrderId = item.OrderId,
                         BuyerItemId = item.Id,
@@ -101,11 +99,11 @@ namespace PototoTrade.Service.BuyerItem
                         ProductUrl = productUrl,
                         ProductOwner = item.Product.User.Name,
                         BuyerItemStatus = item.Status,
-                        RefundableBoolean = item.Product.RefundGuaranteedDuration > 0,
+                        RefundableBoolean = isRefundable,
                         RemainingRefundDays = remainingRefundDays,
                         BuyerItemDelivery = deliveries
-                    };
-                }));
+                    });
+                }
 
                 return new ResponseModel<List<T>>
                 {
@@ -127,6 +125,7 @@ namespace PototoTrade.Service.BuyerItem
                 };
             }
         }
+
 
         public async Task<ResponseModel<List<T>>> ViewRefundItems<T>(ClaimsPrincipal userClaims)
         {

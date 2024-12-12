@@ -47,7 +47,7 @@ public class ShoppingCartItemsService
             }
 
             var product = await _product.GetProduct(cartItem.ProductId);
-            if (product == null || product.Status != "Available")
+            if (product == null || product.Status != "available")
             {
                 response.Message = "Product is not available.";
                 return response;
