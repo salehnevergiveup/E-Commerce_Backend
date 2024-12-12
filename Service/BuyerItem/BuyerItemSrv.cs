@@ -224,7 +224,8 @@ namespace PototoTrade.Service.BuyerItem
                 {
                     throw new CustomException<GeneralMessageDTO>(ExceptionEnum.GetException("BUYER_ITEM_NOT_FOUND"));
                 }
-                var lastStage = buyerItem.BuyerItemDeliveries.OrderByDescending(d => d.StageDate).FirstOrDefault();
+                var lastStage = buyerItem.BuyerItemDeliveries.OrderByDescending(d => d.Id) .ThenByDescending(d => d.StageDate).FirstOrDefault();
+                Console.Error.WriteLine(lastStage);
                 if (lastStage != null)
                 {
                     if (!IsValidStageTransition(lastStage.StageTypes, stageType))
