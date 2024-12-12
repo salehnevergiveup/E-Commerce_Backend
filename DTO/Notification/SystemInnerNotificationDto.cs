@@ -1,17 +1,18 @@
 namespace PotatoTrade.DTO.Notification{
-    public class OrderPurchasedNotificationDTO
+    public class SystemInnerNotificationDto
     {
         public string SenderUsername {get; set;} = "System";
+
+        public int senderId {get; set;}
         public string ReceiverUsername {get; set;} = null!;
 
-        public string Type {get; set;} = "item purchased notification";
+        public int ReceiverId {get; set;} 
+        
         public string Title { get; set; } = null!;
 
         public string MessageText { get; set; } = null!;
 
-        public DateTime CreatedAt { get; set; }
 
-        public string Status { get; set; } = "notRead";
     }
 
 }

@@ -30,63 +30,76 @@ namespace PotatoTrade.Service.Notification{
             _context = context;
         }
 
-        // public async Task<ResponseModel<List<OrderPurchasedNotificationDTO>>> createOrderPurchasedNotificationandSaveToDB(ClaimsPrincipal userClaims, string title, string message){
-        //     var response  = new ResponseModel<List<OrderPurchasedNotificationDTO>>{
-        //         Success = false,
-        //         Data = null,
-        //         Message = "Failed to create and save noti to db"
-        //     };
-        //     try{
-        //         var buyerId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-        //         if (buyerId == 0)
-        //         {
-        //             response.Message = "get buyer id from user claims error";
-        //             return response;
-        //         }        
-        //         var buyerUsername = _userAccountRepository.GetUsernameByUserIdAsync(buyerId);
-        //         Console.WriteLine($"{buyerUsername}");
-        //         if (buyerUsername == null)
-        //         {
-        //             response.Message = "get buyerUsername error";
-        //             return response; 
-        //         }
-
-        //         var orders = new Notifications{
-        //             SenderId = buyerId,
-        //             SenderUsername = buyerUsername.ToString(),
-        //             ReceiverId = 0, //
-        //             ReceiverUsername = "test" ,//
-        //             Type = "item purchased notification",
-        //             Title = title,
-        //             MessageText = message,
-        //             CreatedAt = DateTime.UtcNow,
-        //             Status = "notRead",
-        //         };
-
+        public async Task<ResponseModel<List<OrderPurchasedNotificationDTO>>> createOrderPurchasedNotificationandSaveToDB(ClaimsPrincipal userClaims, List<SystemInnerNotificationDto> orderlist){
+            var response  = new ResponseModel<List<OrderPurchasedNotificationDTO>>{
+                Success = false,
+                Data = null,
+                Message = "Failed to create and save noti to db"
+            };
+            try{
+                // var buyerId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
+                // if (buyerId == 0)
+                // {
+                //     response.Message = "get buyer id from user claims error";
+                //     return response;
+                // }        
                 
+                // var buyerUsername = _userAccountRepository.GetUsernameByUserIdAsync(buyerId);
+                // Console.WriteLine($"{buyerUsername}");
+                // if (buyerUsername == null)
+                // {
+                //     response.Message = "get buyerUsername error";
+                //     return response; 
+                // }
 
-        //         await _notificationRepository.CreateNotification(orders);
+                List<OrderPurchasedNotificationDTO> orderNotifactionList = new List<OrderPurchasedNotificationDTO>();
                 
-        //         var orderPurchasedDTO = new OrderPurchasedNotificationDTO
-        //         {
-        //             SenderUsername = orders.SenderUsername,
-        //             Title = orders.Title, 
-        //             ReceiverUsername = orders.ReceiverUsername,
-        //             Type = orders.Type,
-        //             MessageText = orders.MessageText,
-        //             CreatedAt = orders.CreatedAt,
-        //             Status = orders.Status 
-        //         };
-        //         response.Success = true;
-        //         response.Data = orderPurchasedDTO;
-        //         response.Message = "broadcast message created and saved successfully";
-            
+                if (orderlist.Any()){
+                foreach (var order in orderlist){
 
-        //     }catch(Exception e){
-        //         response.Message = $"An error occurred: {e.Message}";
-        //     }
-        // return response;
-        // }
+                    var orders = new Notifications{
+                    SenderId = 1,
+                    SenderUsername = "SuperAdmin",
+                    ReceiverId = order.ReceiverId, //
+                    ReceiverUsername =order.ReceiverUsername ,//
+                    Type = "item purchased notification",
+                    Title = order.Title,
+                    MessageText = order.MessageText,
+                    CreatedAt = DateTime.UtcNow,
+                    Status = "notRead",
+                    
+                };
+                Console.WriteLine($"Creating Notification by system : {orders}");
+
+                await _notificationRepository.CreateNotification(orders);
+
+                var orderPurchasedDTO = new OrderPurchasedNotificationDTO
+                {
+                    SenderUsername = "Admin",
+                    Title = order.Title,
+                    ReceiverUsername = orders.ReceiverUsername,
+                    Type = orders.Type,
+                    MessageText = orders.MessageText,
+                    CreatedAt = orders.CreatedAt,
+                    Status = orders.Status 
+                };
+
+                orderNotifactionList.Add(orderPurchasedDTO);
+                Console.WriteLine($"{orderPurchasedDTO}");
+
+                }
+                }
+    
+                response.Success = true;
+                response.Data = orderNotifactionList;
+                response.Message = "broadcast message created and saved successfully";
+               
+
+            }catch(Exception e){
+                response.Message = $"An error occurred: {e.Message}";
+            }
+        return response;
+        }
 
         public async Task<ResponseModel<BroadcastReturnDTO>> CreateBroadcastNotificationWithUserNotifications(ClaimsPrincipal userClaims, string senderUsername, string title, string message)
         {

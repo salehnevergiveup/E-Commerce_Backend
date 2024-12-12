@@ -1,5 +1,8 @@
 using System;
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
+using PotatoTrade.DTO.Notification;
+using PotatoTrade.Service.Notification;
 using PototoTrade.DTO.Common;
 using PototoTrade.DTO.Product;
 using PototoTrade.Models.BuyerItem;
@@ -41,10 +44,14 @@ namespace PototoTrade.Service.Product
 
         private readonly WalletTransactionRepository _walletTransactionRepository;
 
+        private readonly NotificationService _notificationService;
+
+        private readonly IHubContext<NotificationHub> _notificationHubContext;
+
         public ProductSrvBsn(ProductRepository productRepository, MediaRepository mediaRepository, UserAccountRepository userRepository,
-        UserWalletService userWalletService, WalletRepository walletRepository, MediaSrv mediaSrv, PurchaseOrderRepository purchaseOrderRepository,
+        UserWalletService userWalletService, WalletRepository walletRepository, MediaSrv mediaSrv, PurchaseOrderRepository purchaseOrderRepository,NotificationService notificationService,
          ShoppingCartRepository shoppingCartRepository, BuyerItemRepository buyerItemRepository,
-         WalletTransactionRepository walletTransactionRepository, ILogger<ProductSrv> logger)
+         WalletTransactionRepository walletTransactionRepository, ILogger<ProductSrv> logger, IHubContext<NotificationHub> notificationHubContext)
         {
             _productRepository = productRepository;
             _mediaRepository = mediaRepository;
@@ -56,6 +63,8 @@ namespace PototoTrade.Service.Product
             _shoppingCartRepository = shoppingCartRepository;
             _buyerItemRepository = buyerItemRepository;
             _walletTransactionRepository = walletTransactionRepository;
+            _notificationService = notificationService;
+            _notificationHubContext = notificationHubContext;
         }
 
         public async Task<ResponseModel<T>> CreateProduct<T>(ClaimsPrincipal userClaims, CreateProductDTO createProductDto)
@@ -496,6 +505,7 @@ namespace PototoTrade.Service.Product
                     CreatedAt = DateTime.UtcNow
                 };
                 await _walletTransactionRepository.CreateTransaction(userTransaction);
+                //List<SystemInnerNotificationDto> orderNotifactionList = new List<SystemInnerNotificationDto>();
 
 
                 foreach (var item in paymentRequest.RebateItems)
@@ -593,8 +603,21 @@ namespace PototoTrade.Service.Product
                         StageDate = DateTime.UtcNow
                     };
                     await _buyerItemRepository.CreateBuyerItemDelivery(delivery);
+
+                    // SystemInnerNotificationDto currentOrderNotification = new SystemInnerNotificationDto();
+                    // var sellerDetails = await _userRepository.GetUserByIdAsync(product.UserId);
+                    // currentOrderNotification.ReceiverId = sellerDetails.Id;
+                    // currentOrderNotification.SenderUsername = "System";
+                    // currentOrderNotification.ReceiverUsername = sellerDetails.Username;
+                    // currentOrderNotification.Title = $"Product Sold!";
+                    // currentOrderNotification.MessageText = $"{product.Title} has been purchased!";
+                    // orderNotifactionList.Add(currentOrderNotification);
                 }
 
+                // var orderAA = await _notificationService.createOrderPurchasedNotificationandSaveToDB(userClaims, orderNotifactionList);
+                // Console.WriteLine($"==============: {orderAA.Data}");
+                // await _notificationHubContext.Clients.Group("Users").SendAsync("ReceivePurchasedNotification", orderAA.Data);
+                
                 purchaseOrder.TotalAmount = paymentRequest.FinalPrice;
                 purchaseOrder.Status = "done payment";
                 await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrder);
