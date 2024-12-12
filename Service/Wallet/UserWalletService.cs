@@ -66,8 +66,7 @@ namespace PototoTrade.Service.Wallet
                 {
                     //UserId = wallet.UserId,
                     AvailableBalance = wallet.AvailableBalance,
-                    OnHoldBalance = wallet.OnHoldBalance,
-                    UpdatedAt = wallet.UpdatedAt,
+                    OnHoldBalance = wallet.OnHoldBalance
                 };
                 response.Data = walletBalanceDTO;
                 response.Success = true;
@@ -136,8 +135,8 @@ namespace PototoTrade.Service.Wallet
                     }
                 },
                 Mode = "payment",
-                SuccessUrl = $"http://localhost:3000/user/profile?tab=balance", //$"http://localhost:3000/user/top-up-successful?session_id={{CHECKOUT_SESSION_ID}}",
-                CancelUrl = "http://localhost:3000/user/profile?tab=balance",
+                SuccessUrl = "http://localhost:3000/user/profile", //$"https://yourdomain.com/success?session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = "http://localhost:3000/user/profile",
                 Metadata = new Dictionary<string, string>
                 {
                     { "userId", userId.ToString() },
@@ -150,10 +149,10 @@ namespace PototoTrade.Service.Wallet
             {
                 var service = new SessionService();
                 var session = await service.CreateAsync(options);
-                Console.WriteLine($"Session created: {session.Id}");
+                Console.WriteLine(session.Id);
                 response.Data = session.Url;
                 response.Success = true;
-                response.Message = $"Stripe session created: {session.Id}";
+                response.Message = "Stripe session created: {session.Id}";
                 return response;
             }
             catch (StripeException ex)

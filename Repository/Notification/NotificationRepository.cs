@@ -17,6 +17,8 @@ namespace PotatoTrade.Repository.Notification{
 
         Task<List<NotificationDTO>> GetAllNotificationsForAdmin();
 
+        //Task<List<SendNotificationDTO>> GetSendNotificationDTOByNotificationId(int notificationId);
+
         //Task<List<UserNotification>> MarkAllNotificationsAsRead(int userId, UserNotification userNotifications);
 
         

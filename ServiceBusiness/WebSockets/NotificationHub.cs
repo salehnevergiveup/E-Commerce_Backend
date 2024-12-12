@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using PotatoTrade.Repository.Notification;
+using PotatoTrade.Service.Notification;
 using PototoTrade.Service.Utilities.Response;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -9,9 +10,12 @@ public class NotificationHub : Hub
 {
     private readonly NotificationRepository _notificationRepository;
 
-    public NotificationHub(NotificationRepository notificationRepository)
+    private readonly NotificationService _notificationService;
+
+    public NotificationHub(NotificationRepository notificationRepository, NotificationService notificationService)
     {
         _notificationRepository = notificationRepository;
+        _notificationService = notificationService;
     }
 
     [Authorize(Roles = "Admin,User")]
@@ -41,17 +45,20 @@ public class NotificationHub : Hub
 
             // Fetch and send the latest notifications
             var latestNotifications = await _notificationRepository.GetLatestNotificationsByUserId(userId);
-            Console.WriteLine($"Fetched unread notifications for user ID: {userId}");
+
+            Console.WriteLine($"Fetched latest notifications for user ID: {userId}");
 
             if (latestNotifications != null)
             {
                 foreach (var notification in latestNotifications)
                 {
-                    Console.WriteLine($"Notification ID: {notification.NotificationId}, Title: {notification.Title}, Message: {notification.MessageText}, Created At: {notification.CreatedAt}");
+                    Console.WriteLine($"INITIAL Notification ID: {notification.NotificationId}, Title: {notification.Title}, Message: {notification.MessageText}, Created At: {notification.CreatedAt}, IsRead: {notification.IsRead}");
                 }
 
                 await Clients.Caller.SendAsync("ReceiveListofLatestNotification", latestNotifications);
             }
+
+           
         }
 
         await base.OnConnectedAsync();

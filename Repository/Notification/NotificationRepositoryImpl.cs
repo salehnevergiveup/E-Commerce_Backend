@@ -123,19 +123,11 @@ namespace PotatoTrade.Repository.Notification
         .Where(n => n.UserId == userId && !n.IsRead)
         .ToListAsync();
 
-        // Log the fetched notifications
-        Console.WriteLine($"Fetched {unreadNotifications.Count} unread notifications for user ID: {userId}");
-        foreach (var notification in unreadNotifications)
-        {
-            Console.WriteLine($"Notification ID: {notification.NotificationId}, IsRead: {notification.IsRead}, UserID: {notification.UserId}");
-        }
-
         return unreadNotifications;
         }
 
         public async Task<int> MarkAllNotificationsAsReadAsync(List<UserNotification> notifications)
         {
-            try{
             foreach (var notification in notifications)
             {
                 notification.IsRead = true;
@@ -143,20 +135,17 @@ namespace PotatoTrade.Repository.Notification
             }
 
             return await _context.SaveChangesAsync(); // Return the number of rows updated
-            }catch (Exception e){
-                Console.WriteLine("Mark notifications as read error" + e);
-                return 0;
-            }
         }
 
         public async Task<List<NotificationDTO>> GetAllNotificationsForAdmin(){
-             try
-    {
+        try
+        {
         // Fetch notifications along with the read/unread counts
         var notifications = await (
             from notification in _context.Notifications
             join userNotification in _context.UserNotification
             on notification.Id equals userNotification.NotificationId into userNotificationsGroup
+            where notification.ReceiverUsername == "all" && notification.Type == "broadcast"
             select new NotificationDTO
             {
                 SenderUsername = notification.SenderUsername,
@@ -180,6 +169,10 @@ namespace PotatoTrade.Repository.Notification
             return new List<NotificationDTO>();
         }
         }
+
+        // public async Task<SendNotificationDTO> GetSendNotificationDTOByNotificationId(int notificationId){
+        //     try 
+        // }
 
         // public async Task<List<UserNotification>> MarkAllNotificationsAsRead(int userId, UserNotification userNotifications)
         // {

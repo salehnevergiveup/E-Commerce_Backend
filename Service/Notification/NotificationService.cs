@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
 using PotatoTrade.DTO.Notification;
 using PotatoTrade.Repository.Notification;
 using PototoTrade.Data;
@@ -11,6 +12,8 @@ using PototoTrade.Service.Utilities.Response;
 namespace PotatoTrade.Service.Notification{
     public class NotificationService{
         private readonly NotificationRepository _notificationRepository;
+        private readonly IHubContext<NotificationHub> _notificationHubContext;
+
         private readonly UserAccountRepository _userAccountRepository;
 
         private readonly UserAccountService _userAccountService;
@@ -18,55 +21,76 @@ namespace PotatoTrade.Service.Notification{
 
 
 
-        public NotificationService(NotificationRepository notificationRepository, UserAccountRepository userAccountRepository, UserAccountService userAccountService, DBC context)
+        public NotificationService(IHubContext<NotificationHub> notificationHubContext, NotificationRepository notificationRepository, UserAccountRepository userAccountRepository, UserAccountService userAccountService, DBC context)
         {
+            _notificationHubContext = notificationHubContext;
             _notificationRepository = notificationRepository;
             _userAccountRepository = userAccountRepository;
             _userAccountService = userAccountService;
             _context = context;
         }
 
-        public async Task<ResponseModel<Notifications>>  createBroadcastandSaveToDB(ClaimsPrincipal userClaims, string title, string message){
-            var response  = new ResponseModel<Notifications>{
-                Success = false,
-                Data = null,
-                Message = "Failed to create and save noti to db"
-            };
-            try{
-                var userId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-                if (userId == 0)
-                {
-                    response.Message = "Invalid Request";
-                    return response;
-                }        
+        // public async Task<ResponseModel<List<OrderPurchasedNotificationDTO>>> createOrderPurchasedNotificationandSaveToDB(ClaimsPrincipal userClaims, string title, string message){
+        //     var response  = new ResponseModel<List<OrderPurchasedNotificationDTO>>{
+        //         Success = false,
+        //         Data = null,
+        //         Message = "Failed to create and save noti to db"
+        //     };
+        //     try{
+        //         var buyerId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
+        //         if (buyerId == 0)
+        //         {
+        //             response.Message = "get buyer id from user claims error";
+        //             return response;
+        //         }        
+        //         var buyerUsername = _userAccountRepository.GetUsernameByUserIdAsync(buyerId);
+        //         Console.WriteLine($"{buyerUsername}");
+        //         if (buyerUsername == null)
+        //         {
+        //             response.Message = "get buyerUsername error";
+        //             return response; 
+        //         }
 
-                var broadcastMsg = new Notifications
-                {
-                    SenderId = userId,
-                    Title = title, 
-                    ReceiverId = 0,
-                    Type = "broadcast",
-                    MessageText = message,
-                    CreatedAt = DateTime.Now,
-                    Status = "delivered" //??
-                };
+        //         var orders = new Notifications{
+        //             SenderId = buyerId,
+        //             SenderUsername = buyerUsername.ToString(),
+        //             ReceiverId = 0, //
+        //             ReceiverUsername = "test" ,//
+        //             Type = "item purchased notification",
+        //             Title = title,
+        //             MessageText = message,
+        //             CreatedAt = DateTime.UtcNow,
+        //             Status = "notRead",
+        //         };
 
-                await _notificationRepository.CreateNotification(broadcastMsg);
                 
-                response.Success = true;
-                response.Data = broadcastMsg;
-                response.Message = "broadcast message created and saved successfully";
+
+        //         await _notificationRepository.CreateNotification(orders);
+                
+        //         var orderPurchasedDTO = new OrderPurchasedNotificationDTO
+        //         {
+        //             SenderUsername = orders.SenderUsername,
+        //             Title = orders.Title, 
+        //             ReceiverUsername = orders.ReceiverUsername,
+        //             Type = orders.Type,
+        //             MessageText = orders.MessageText,
+        //             CreatedAt = orders.CreatedAt,
+        //             Status = orders.Status 
+        //         };
+        //         response.Success = true;
+        //         response.Data = orderPurchasedDTO;
+        //         response.Message = "broadcast message created and saved successfully";
             
 
-            }catch(Exception e){
-                response.Message = $"An error occurred: {e.Message}";
-            }
-        return response;
-        }
+        //     }catch(Exception e){
+        //         response.Message = $"An error occurred: {e.Message}";
+        //     }
+        // return response;
+        // }
 
-        public async Task<ResponseModel<Notifications>> CreateBroadcastNotificationWithUserNotifications(ClaimsPrincipal userClaims, string senderUsername, string title, string message)
+        public async Task<ResponseModel<BroadcastReturnDTO>> CreateBroadcastNotificationWithUserNotifications(ClaimsPrincipal userClaims, string senderUsername, string title, string message)
         {
-            var response = new ResponseModel<Notifications>
+            var response = new ResponseModel<BroadcastReturnDTO>
             {
                 Success = false,
                 Data = null,
@@ -106,8 +130,22 @@ namespace PotatoTrade.Service.Notification{
                     // Commit the transaction if both operations succeed
                     await transaction.CommitAsync();
 
+                    var broadcastReturnDTO = new BroadcastReturnDTO
+                    {
+                        NotificationId = broadcastMsg.Id,
+                        SenderUsername = senderUsername,
+                        Title = title,
+                        MessageText = message,
+                        CreatedAt = broadcastMsg.CreatedAt,
+                        Type = broadcastMsg.Type,
+                        IsRead = false,
+                        UpdatedAt = broadcastMsg.CreatedAt,
+
+                    };
+                    await _notificationHubContext.Clients.Group("Users").SendAsync("ReceiveNotification", broadcastReturnDTO);
+                   
                     response.Success = true;
-                    response.Data = broadcastMsg;
+                    response.Data = broadcastReturnDTO;
                     response.Message = "Broadcast message and user notification entries created and saved successfully";
                     return response;
                 }
@@ -189,7 +227,6 @@ namespace PotatoTrade.Service.Notification{
                 {
                     Console.WriteLine("Unread notifications returned null.");
                     response.Message = "Unread notifications returned null.";
-                    response.Data = null;
                     response.Success = true;
                     return response;
                 }
@@ -199,7 +236,7 @@ namespace PotatoTrade.Service.Notification{
                 {
                     response.Message = "No unread notifications found.";
                     response.Success = true; // No errors but nothing to update
-                    response.Data = null;
+                    response.Data = new List<UserNotificationWithMetadataDTO>();
                     Console.WriteLine("No unread notifications found.");
                     return response;
                 }
@@ -221,6 +258,28 @@ namespace PotatoTrade.Service.Notification{
                         // Include other fields as needed
                     })
                     .ToList();
+
+                var latestNotifications = await _notificationRepository.GetLatestNotificationsByUserId(userId);
+                foreach (var notification in latestNotifications)
+                {
+                    Console.WriteLine($"NEW Notification ID: {notification.NotificationId}, Title: {notification.Title}, Message: {notification.MessageText}, Created At: {notification.CreatedAt}, IsRead: {notification.IsRead}" );
+                }
+
+                try
+                {
+                    await _notificationHubContext.Clients.Group("Users").SendAsync("ReceiveListofLatestNotification", latestNotifications);
+                    Console.WriteLine($"SignalR event 'ReceiveListofLatestNotification' sent successfully to user {userId}.");
+                }
+                catch (Exception signalREx)
+                {
+                    Console.WriteLine($"Failed to send SignalR event to user {userId}. Exception: {signalREx.Message}");
+                    if (signalREx.InnerException != null)
+                    {
+                        Console.WriteLine($"Inner Exception: {signalREx.InnerException.Message}");
+                    }
+                    Console.WriteLine($"Stack Trace: {signalREx.StackTrace}");
+                }
+                Console.WriteLine($"User {userId} notified with updated notifications.");
 
                 response.Success = true;
                 response.Message = $"{updatedCount} notifications marked as read.";
@@ -263,6 +322,7 @@ namespace PotatoTrade.Service.Notification{
 
             return response;
         }
+
 
         // public async Task<ResponseModel<Notifications>> RemindAdminToChangePassword()
         // {

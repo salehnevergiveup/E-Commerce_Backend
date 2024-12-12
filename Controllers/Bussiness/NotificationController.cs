@@ -22,14 +22,16 @@ namespace PotatoTrade.Controllers.Bussiness{
         [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> BroadcastNotificationToUsers([FromBody] SendNotificationDTO sendNotificationDTO)
         {
-            var responseObject = await _notificationService.CreateBroadcastNotificationWithUserNotifications(User, sendNotificationDTO.SenderUsername, sendNotificationDTO.Title, sendNotificationDTO.MessageText);
-            if (!responseObject.Success)
-            {
-                return BadRequest(responseObject.Message);
-            }
-            await _notificationHubContext.Clients.Group("Users").SendAsync("ReceiveNotification", responseObject.Data);
 
-            return Ok(responseObject.Success);        
+            return MakeResponse(await _notificationService.CreateBroadcastNotificationWithUserNotifications(User, sendNotificationDTO.SenderUsername, sendNotificationDTO.Title, sendNotificationDTO.MessageText));
+            // var responseObject = await _notificationService.CreateBroadcastNotificationWithUserNotifications(User, sendNotificationDTO.SenderUsername, sendNotificationDTO.Title, sendNotificationDTO.MessageText);
+            // if (!responseObject.Success)
+            // {
+            //     return BadRequest(responseObject.Message);
+            // }
+            
+
+            // return Ok(responseObject.Success);        
         }
 
         [HttpGet("users/all")]
@@ -58,15 +60,8 @@ namespace PotatoTrade.Controllers.Bussiness{
         [Authorize(Roles = "User")]
         public async Task<IActionResult> MarkAllNotificationsAsRead()
         {
-            var responseObject = await _notificationService.MarkAllNotificationsAsRead(User);
-            if (!responseObject.Success)
-            {
-                return BadRequest(responseObject.Message);
-            }
-            await _notificationHubContext.Clients.Group("Users").SendAsync("ReceiveNotification", responseObject.Data);
-
-            return Ok();                
-            }
+            return MakeResponse(await _notificationService.MarkAllNotificationsAsRead(User));            
+        }
 
     }
 
