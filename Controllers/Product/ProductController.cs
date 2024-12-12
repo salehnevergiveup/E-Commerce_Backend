@@ -122,13 +122,19 @@ namespace PototoTrade.Controllers.Product
         [HttpGet("get-singleproduct-details")]
         public async Task<IActionResult> ViewProductDetails([FromQuery] int productId)
         {
-            return MakeResponse(await _productService.ViewProductDetails<GeneralMessageDTO>(productId, User));
+            return MakeResponse(await _productService.ViewProductDetails<ProductDetailsDTO>(productId, User));
         }
 
         [HttpDelete("delete-product")]
         public async Task<IActionResult> DeleteProduct([FromQuery] int productId)
         {
             return MakeResponse(await _productService.DeleteProduct<GeneralMessageDTO>(productId, User));
+        }
+
+        [HttpGet("get-refund-product-buyer-item-id")]
+        public async Task<IActionResult> getRefundbuyeritemid([FromQuery] int productId)
+        {
+            return MakeResponse(await _productService.getRefundbuyeritemid<BuyerItemIdResponseDTO>(productId, User));
         }
     }
 
