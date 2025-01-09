@@ -505,8 +505,7 @@ namespace PototoTrade.Service.Product
                     CreatedAt = DateTime.UtcNow
                 };
                 await _walletTransactionRepository.CreateTransaction(userTransaction);
-                //List<SystemInnerNotificationDto> orderNotifactionList = new List<SystemInnerNotificationDto>();
-
+                
 
                 foreach (var item in paymentRequest.RebateItems)
                 {
@@ -603,20 +602,24 @@ namespace PototoTrade.Service.Product
                         StageDate = DateTime.UtcNow
                     };
                     await _buyerItemRepository.CreateBuyerItemDelivery(delivery);
+                    List<SystemInnerNotificationDto> orderNotifactionList = new List<SystemInnerNotificationDto>();
 
-                    // SystemInnerNotificationDto currentOrderNotification = new SystemInnerNotificationDto();
-                    // var sellerDetails = await _userRepository.GetUserByIdAsync(product.UserId);
-                    // currentOrderNotification.ReceiverId = sellerDetails.Id;
-                    // currentOrderNotification.SenderUsername = "System";
-                    // currentOrderNotification.ReceiverUsername = sellerDetails.Username;
-                    // currentOrderNotification.Title = $"Product Sold!";
-                    // currentOrderNotification.MessageText = $"{product.Title} has been purchased!";
-                    // orderNotifactionList.Add(currentOrderNotification);
+                    SystemInnerNotificationDto currentOrderNotification = new SystemInnerNotificationDto();
+                    var sellerDetails = await _userRepository.GetUserByIdAsync(product.UserId);
+                    currentOrderNotification.ReceiverId = sellerDetails.Id;
+                    currentOrderNotification.SenderUsername = "System";
+                    currentOrderNotification.ReceiverUsername = sellerDetails.Username;
+                    currentOrderNotification.Title = $"Product Sold!";
+                    currentOrderNotification.MessageText = $"{product.Title} has been purchased by a buyer!";
+                    orderNotifactionList.Add(currentOrderNotification);
+                    await _notificationService.createOrderPurchasedNotificationandSaveToDB(userClaims, orderNotifactionList);
+                    //var orderAA = await _notificationService.createOrderPurchasedNotificationandSaveToDB(userClaims, orderNotifactionList);
+                // Console.WriteLine($"==============: {orderAA.Data}");
+                //                 Console.WriteLine($"HERE HERE HERE: {sellerDetails.Id}");
+                // await _notificationHubContext.Clients.Group($"User-{sellerDetails.Id}").SendAsync("ReceivePurchasedNotification", orderAA.Data);
                 }
 
-                // var orderAA = await _notificationService.createOrderPurchasedNotificationandSaveToDB(userClaims, orderNotifactionList);
-                // Console.WriteLine($"==============: {orderAA.Data}");
-                // await _notificationHubContext.Clients.Group("Users").SendAsync("ReceivePurchasedNotification", orderAA.Data);
+                
                 
                 purchaseOrder.TotalAmount = paymentRequest.FinalPrice;
                 purchaseOrder.Status = "done payment";

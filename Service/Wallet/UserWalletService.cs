@@ -168,7 +168,7 @@ namespace PototoTrade.Service.Wallet
         }
 
         // 3. Update Wallet Balance After Payment
-        public async Task<ResponseModel<bool>> TopUpWalletAsync(string userId, decimal amount) //if doesnt work in future, change to claimsprincipal to fetch userid
+        public async Task<ResponseModel<bool>> TopUpWalletAsync(string userId, decimal amount) 
         {
             var response = new ResponseModel<bool>
             {

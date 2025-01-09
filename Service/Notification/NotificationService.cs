@@ -37,21 +37,6 @@ namespace PotatoTrade.Service.Notification{
                 Message = "Failed to create and save noti to db"
             };
             try{
-                // var buyerId = int.Parse(userClaims.FindFirst(ClaimTypes.Name)?.Value);
-                // if (buyerId == 0)
-                // {
-                //     response.Message = "get buyer id from user claims error";
-                //     return response;
-                // }        
-                
-                // var buyerUsername = _userAccountRepository.GetUsernameByUserIdAsync(buyerId);
-                // Console.WriteLine($"{buyerUsername}");
-                // if (buyerUsername == null)
-                // {
-                //     response.Message = "get buyerUsername error";
-                //     return response; 
-                // }
-
                 List<OrderPurchasedNotificationDTO> orderNotifactionList = new List<OrderPurchasedNotificationDTO>();
                 
                 if (orderlist.Any()){
@@ -59,7 +44,7 @@ namespace PotatoTrade.Service.Notification{
 
                     var orders = new Notifications{
                     SenderId = 1,
-                    SenderUsername = "SuperAdmin",
+                    SenderUsername = "System",
                     ReceiverId = order.ReceiverId, //
                     ReceiverUsername =order.ReceiverUsername ,//
                     Type = "item purchased notification",
@@ -75,20 +60,28 @@ namespace PotatoTrade.Service.Notification{
 
                 var orderPurchasedDTO = new OrderPurchasedNotificationDTO
                 {
-                    SenderUsername = "Admin",
+                    NotificationId = orders.Id,
+                    SenderUsername = "System",
                     Title = order.Title,
                     ReceiverUsername = orders.ReceiverUsername,
                     Type = orders.Type,
                     MessageText = orders.MessageText,
                     CreatedAt = orders.CreatedAt,
-                    Status = orders.Status 
+                    UpdatedAt = orders.CreatedAt,
+                    Status = orders.Status,
+                    IsRead = false,
+
+                    
                 };
 
                 orderNotifactionList.Add(orderPurchasedDTO);
                 Console.WriteLine($"{orderPurchasedDTO}");
-
+                await _notificationHubContext.Clients.Group($"User-{orders.ReceiverId}")
+                    .SendAsync("ReceivePurchasedNotification", orderPurchasedDTO);
                 }
+                
                 }
+                
     
                 response.Success = true;
                 response.Data = orderNotifactionList;
@@ -172,9 +165,9 @@ namespace PotatoTrade.Service.Notification{
             }
         }
 
-        public async Task<ResponseModel<List<UserNotificationWithMetadataDTO?>>> GetUserNotificationsAsync(ClaimsPrincipal userClaims)
+        public async Task<ResponseModel<List<GetAllLatestNotificationsDTO>>> GetUserNotificationsAsync(ClaimsPrincipal userClaims)
         {
-            var response = new ResponseModel<List<UserNotificationWithMetadataDTO?>>
+            var response = new ResponseModel<List<GetAllLatestNotificationsDTO>>
             {
                 Success = false,
                 Data = null,
@@ -212,12 +205,12 @@ namespace PotatoTrade.Service.Notification{
             return response;
         }
 
-        public async Task<ResponseModel<List<UserNotificationWithMetadataDTO>>> MarkAllNotificationsAsRead(ClaimsPrincipal userClaims)
+        public async Task<ResponseModel<bool>> MarkAllNotificationsAsRead(ClaimsPrincipal userClaims)
         {
-            var response = new ResponseModel<List<UserNotificationWithMetadataDTO>>
+            var response = new ResponseModel<bool>
             {
                 Success = false,
-                Data = null,
+                Data = false,
                 Message = "Failed to mark all notifications as read."
             };
 
@@ -230,57 +223,19 @@ namespace PotatoTrade.Service.Notification{
                         return response;
                     }
 
-                
-                // Fetch unread notifications
-                Console.WriteLine($"Fetching unread notifications for userId: {userId}");
-                var unreadNotifications = await _notificationRepository.GetUnreadNotificationsForUserAsync(userId);
+                var updatedCount = await _notificationRepository.MarkNotificationsAsReadAsync(userId);
 
-                // Log the fetched notifications
-                if (unreadNotifications == null)
-                {
-                    Console.WriteLine("Unread notifications returned null.");
-                    response.Message = "Unread notifications returned null.";
-                    response.Success = true;
-                    return response;
-                }
-                Console.WriteLine($"Number of unread notifications fetched: {unreadNotifications.Count}");
-
-                if (!unreadNotifications.Any())
-                {
-                    response.Message = "No unread notifications found.";
-                    response.Success = true; // No errors but nothing to update
-                    response.Data = new List<UserNotificationWithMetadataDTO>();
-                    Console.WriteLine("No unread notifications found.");
-                    return response;
-                }
-
-                // Mark all notifications as read
-                Console.WriteLine("Marking all notifications as read.");
-                var updatedCount = await _notificationRepository.MarkAllNotificationsAsReadAsync(unreadNotifications);
-
-                Console.WriteLine($"Number of notifications marked as read: {updatedCount}");
-
-                // Prepare response data (convert to DTOs)
-                Console.WriteLine("Preparing response data.");
-                response.Data = unreadNotifications
-                    .Select(n => new UserNotificationWithMetadataDTO
-                    {
-                        NotificationId = n.NotificationId,
-                        IsRead = n.IsRead,
-                        UpdatedAt = n.UpdatedAt,
-                        // Include other fields as needed
-                    })
-                    .ToList();
+                Console.WriteLine($"Number of notifications marked as read: {updatedCount}+ {userId}");
 
                 var latestNotifications = await _notificationRepository.GetLatestNotificationsByUserId(userId);
                 foreach (var notification in latestNotifications)
                 {
-                    Console.WriteLine($"NEW Notification ID: {notification.NotificationId}, Title: {notification.Title}, Message: {notification.MessageText}, Created At: {notification.CreatedAt}, IsRead: {notification.IsRead}" );
+                    Console.WriteLine($"NEW Notification ID: {notification.NotificationId}, Title: {notification.Title}, Message: {notification.MessageText}, Created At: {notification.CreatedAt}, IsRead: {notification.IsRead}, Status: {notification.Status}");
                 }
 
                 try
                 {
-                    await _notificationHubContext.Clients.Group("Users").SendAsync("ReceiveListofLatestNotification", latestNotifications);
+                    await _notificationHubContext.Clients.Group($"User-{userId}").SendAsync("ReceiveListofLatestNotification", latestNotifications);
                     Console.WriteLine($"SignalR event 'ReceiveListofLatestNotification' sent successfully to user {userId}.");
                 }
                 catch (Exception signalREx)

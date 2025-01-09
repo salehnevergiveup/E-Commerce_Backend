@@ -54,13 +54,9 @@ public class NotificationHub : Hub
                 {
                     Console.WriteLine($"INITIAL Notification ID: {notification.NotificationId}, Title: {notification.Title}, Message: {notification.MessageText}, Created At: {notification.CreatedAt}, IsRead: {notification.IsRead}");
                 }
-
-                await Clients.Caller.SendAsync("ReceiveListofLatestNotification", latestNotifications);
+                await Clients.Group($"User-{userId}").SendAsync("ReceiveListofLatestNotification", latestNotifications);
             }
-
-           
         }
-
         await base.OnConnectedAsync();
     }
 

@@ -28,7 +28,6 @@ namespace PototoTrade.Controllers
         [HttpPost]
         public async Task<IActionResult> Index()
         {
-            
             // Read the request body from Stripe
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
                 Console.WriteLine("Received request: " + json);
@@ -48,12 +47,9 @@ namespace PototoTrade.Controllers
                     throwOnApiVersionMismatch: false
                 );
                 // var stripeEvent = JsonConvert.DeserializeObject<Event>(json);
-
-                // Handle the event based on its type
                 if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
                 {
                     Console.WriteLine("Processing CheckoutSessionCompleted event...");
-
                     // Cast event data to a Stripe Session object
                     var session = stripeEvent.Data.Object as Session;
                     if (session?.Metadata == null || !session.Metadata.ContainsKey("userId"))
@@ -61,16 +57,12 @@ namespace PototoTrade.Controllers
                         Console.WriteLine("Metadata is missing or userId is not present.");
                         return BadRequest("Invalid metadata.");
                     }
-
                     if (session?.PaymentStatus == "paid")
                     {
                         Console.WriteLine("Metadata: " + Newtonsoft.Json.JsonConvert.SerializeObject(session.Metadata));
 
                         var userId = session.Metadata["userId"];  // Metadata added during session creation
                         Console.WriteLine("User ID: " + userId.ToString());
-
-                        //session.Metadata["userId"];
-                        // Convert long? to decimal
                         var amount = session.AmountTotal.HasValue 
                             ? (decimal)session.AmountTotal.Value / 100 
                             : 0;
@@ -78,9 +70,7 @@ namespace PototoTrade.Controllers
                         if (amount > 0) // Ensure the amount is valid
                         {
                             await _userWalletService.TopUpWalletAsync(userId, amount);
-                            //new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>([new Claim(ClaimTypes.Name, userId)])))
                             Console.WriteLine("Wallet topped up successfully.");
-
                         }
                         else
                         {
@@ -90,7 +80,6 @@ namespace PototoTrade.Controllers
                 }
                 else
                 {
-                    // Log unexpected event types
                     Console.WriteLine($"Unhandled event type: {stripeEvent.Type}");
                 }
 

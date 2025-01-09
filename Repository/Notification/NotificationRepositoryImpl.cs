@@ -63,27 +63,45 @@ namespace PotatoTrade.Repository.Notification
             
         }
 
-        public async Task<List<UserNotificationWithMetadataDTO>> GetLatestNotificationsByUserId(int userId)
+     public async Task<List<Get5LatestNotificationDTO>> GetLatestNotificationsByUserId(int userId)
+    {
+        try
         {
-            try
-        {
-            var latestNotifications = await (from notification in _context.Notifications
-                                            join userNotification in _context.UserNotification
-                                            on notification.Id equals userNotification.NotificationId
-                                            where userNotification.UserId == userId
-                                            orderby notification.CreatedAt descending
-                                            select new UserNotificationWithMetadataDTO
-                                            {
-                                                UserUsername = userNotification.UserUsername,
-                                                SenderUsername = notification.SenderUsername,
-                                                NotificationId = userNotification.NotificationId,
-                                                Title = notification.Title,
-                                                MessageText = notification.MessageText,
-                                                CreatedAt = notification.CreatedAt,
-                                                Type = notification.Type,
-                                                IsRead = userNotification.IsRead,
-                                                UpdatedAt = userNotification.UpdatedAt
-                                            }).Take(5).ToListAsync();
+            // Fetch the latest 5 notifications tied to the specified userId
+            var latestNotifications = await (
+                from notification in _context.Notifications
+                join userNotification in _context.UserNotification
+                on notification.Id equals userNotification.NotificationId into userNotificationsGroup
+                from userNotification in userNotificationsGroup.DefaultIfEmpty() // Perform left join
+
+                where 
+                    notification.ReceiverId == userId || (userNotification != null && userNotification.UserId == userId)
+                orderby notification.CreatedAt descending // Order by creation date
+
+                select new
+                {
+                    notification,
+                    userNotification
+                }
+            )
+            .GroupBy(n => n.notification.Id) // Group by notification ID to avoid duplicates
+            .Select(group => new Get5LatestNotificationDTO
+            {
+                UserUsername = group.FirstOrDefault().userNotification != null ? group.FirstOrDefault().userNotification.UserUsername : null,
+                SenderUsername = group.FirstOrDefault().notification.SenderUsername,
+                NotificationId = group.Key, // Grouped notification ID
+                Title = group.FirstOrDefault().notification.Title,
+                MessageText = group.FirstOrDefault().notification.MessageText,
+                CreatedAt = group.FirstOrDefault().notification.CreatedAt,
+                Type = group.FirstOrDefault().notification.Type,
+                IsRead = group.FirstOrDefault().userNotification != null ? group.FirstOrDefault().userNotification.IsRead : null,
+                UpdatedAt = group.FirstOrDefault().userNotification != null ? group.FirstOrDefault().userNotification.UpdatedAt : null,
+                ReceiverUsername = group.FirstOrDefault().notification.ReceiverUsername,
+                Status = group.FirstOrDefault().notification.Status
+            })
+            .OrderByDescending(dto => dto.CreatedAt) // Order by the creation timestamp
+            .Take(5) // Limit to the latest 5 notifications
+            .ToListAsync();
 
             return latestNotifications;
         }
@@ -91,31 +109,57 @@ namespace PotatoTrade.Repository.Notification
         {
             return null;
         }
-        
+    }
+
+
+       public async Task<List<GetAllLatestNotificationsDTO>> GetNotificationsForUserAsync(int userId)
+        {
+            try
+            {
+                var notifications = await (
+                    from notification in _context.Notifications
+                    join userNotification in _context.UserNotification
+                    on notification.Id equals userNotification.NotificationId into userNotificationsGroup
+                    from userNotification in userNotificationsGroup.DefaultIfEmpty() // Perform left join
+
+                    where 
+                        notification.ReceiverId == userId || (userNotification != null && userNotification.UserId == userId)
+                    orderby notification.CreatedAt descending
+
+                    select new
+                    {
+                        notification,
+                        userNotification
+                    }
+                )
+                .GroupBy(n => n.notification.Id) // Group by notification ID to avoid duplicates
+                .Select(group => new GetAllLatestNotificationsDTO
+                {
+                    SenderUsername = group.FirstOrDefault().notification.SenderUsername,
+                    ReceiverUsername = group.FirstOrDefault().notification.ReceiverUsername,
+                    UserUsername = group.FirstOrDefault().userNotification != null ? group.FirstOrDefault().userNotification.UserUsername : null,
+                    NotificationId = group.Key, // Grouped notification ID
+                    Title = group.FirstOrDefault().notification.Title,
+                    MessageText = group.FirstOrDefault().notification.MessageText,
+                    CreatedAt = group.FirstOrDefault().notification.CreatedAt,
+                    Type = group.FirstOrDefault().notification.Type,
+                    IsRead = group.FirstOrDefault().userNotification != null ? group.FirstOrDefault().userNotification.IsRead : null,
+                    UpdatedAt = group.FirstOrDefault().userNotification != null ? group.FirstOrDefault().userNotification.UpdatedAt : null,
+                    Status = group.FirstOrDefault().notification.Status
+                })
+                .OrderByDescending(dto => dto.CreatedAt)
+                .ToListAsync();
+
+                return notifications;
+            }
+            catch (Exception ex)
+            {
+                // Log exception
+                return null;
+            }
         }
 
-        public async Task<List<UserNotificationWithMetadataDTO>> GetNotificationsForUserAsync(int userId)
-        {
-            return await (
-            from notification in _context.Notifications
-            join userNotification in _context.UserNotification
-            on notification.Id equals userNotification.NotificationId
-            where userNotification.UserId == userId
-            orderby notification.CreatedAt descending
-            select new UserNotificationWithMetadataDTO
-            {
-                SenderUsername = notification.SenderUsername,
-                UserUsername = userNotification.UserUsername,
-                NotificationId = notification.Id,
-                Title = notification.Title,
-                MessageText = notification.MessageText,
-                CreatedAt = notification.CreatedAt,
-                Type = notification.Type,
-                IsRead = userNotification.IsRead,
-                UpdatedAt = userNotification.UpdatedAt
-            }
-        ).ToListAsync();
-        }
+
 
         public async Task<List<UserNotification>> GetUnreadNotificationsForUserAsync(int userId)
         {
@@ -126,16 +170,65 @@ namespace PotatoTrade.Repository.Notification
         return unreadNotifications;
         }
 
-        public async Task<int> MarkAllNotificationsAsReadAsync(List<UserNotification> notifications)
-        {
-            foreach (var notification in notifications)
-            {
-                notification.IsRead = true;
-                notification.UpdatedAt = DateTime.UtcNow; // Update the timestamp
-            }
+     public async Task<int> MarkNotificationsAsReadAsync(int userId)
+{
+    try
+    {
+        // Retrieve all UserNotification entries for the user
+        var userNotifications = await _context.UserNotification
+            .Where(un => un.UserId == userId && !un.IsRead) // Get only unread notifications
+            .Include(un => un.Notification) // Include related Notification data
+            .ToListAsync();
 
-            return await _context.SaveChangesAsync(); // Return the number of rows updated
+        Console.WriteLine($"Number of UserNotifications fetched: {userNotifications.Count}");
+
+        // Update UserNotification entries
+        foreach (var userNotification in userNotifications)
+        {
+            Console.WriteLine($"UserNotification ID: {userNotification.UserNotificationId}, IsRead: {userNotification.IsRead}, NotificationId: {userNotification.NotificationId}");
+
+            // Update the IsRead field for the UserNotification model
+            userNotification.IsRead = true;
+            userNotification.UpdatedAt = DateTime.UtcNow;
+
+            // Update the Status field for the related Notification model
+            if (userNotification.Notification != null)
+            {
+                _context.Attach(userNotification.Notification); // Ensure Notification is tracked
+                userNotification.Notification.Status = "Read";
+
+                Console.WriteLine($"Notification ID {userNotification.Notification.Id} updated to Status: Read");
+            }
         }
+
+        // Handle standalone notifications without UserNotification entries
+        var standaloneNotifications = await _context.Notifications
+            .Where(n => !_context.UserNotification.Any(un => un.NotificationId == n.Id) && n.Status != "Read")
+            .ToListAsync();
+
+        Console.WriteLine($"Number of standalone Notifications fetched: {standaloneNotifications.Count}");
+
+        foreach (var standaloneNotification in standaloneNotifications)
+        {
+            standaloneNotification.Status = "Read";
+            _context.Attach(standaloneNotification);
+
+            Console.WriteLine($"Standalone Notification ID {standaloneNotification.Id} updated to Status: Read");
+        }
+
+        // Save changes to the database
+        int rowsAffected = await _context.SaveChangesAsync();
+        Console.WriteLine($"Rows affected: {rowsAffected}");
+
+        return rowsAffected; // Returns the number of rows updated
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Exception: {ex.Message}");
+        return 0; // Indicate failure
+    }
+}
+
 
         public async Task<List<NotificationDTO>> GetAllNotificationsForAdmin(){
         try
